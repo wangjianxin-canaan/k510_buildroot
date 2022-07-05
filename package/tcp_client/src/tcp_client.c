@@ -25,7 +25,7 @@
 
 #define  PORT 1234  
 #define  MAXDATASIZE 1000  
-#define IP "10.100.232.22"
+#define IP "10.100.232.29"
 int count = 0;
 int main(int argc, char *argv[])  
 {  

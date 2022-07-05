@@ -1,0 +1,93 @@
+From 5e711d3cb6e2b97edcd0723ecafadb9bbcf92b4c Mon Sep 17 00:00:00 2001
+From: jiangxiangbing <jiangxiangbing@canaan-creative.com>
+Date: Tue, 5 Jul 2022 16:10:00 +0800
+Subject: [PATCH] print coreid
+
+---
+ arch/riscv/kernel/head.S                 | 7 +++++--
+ drivers/net/ethernet/cadence/macb_main.c | 9 +++++++--
+ 2 files changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/arch/riscv/kernel/head.S b/arch/riscv/kernel/head.S
+index 902faab9..9e87d30d 100644
+--- a/arch/riscv/kernel/head.S
++++ b/arch/riscv/kernel/head.S
+@@ -43,6 +43,9 @@ ENTRY(_start)
+ 	li a2, 1
+ 	amoadd.w a3, a2, (a3)
+ 	bnez a3, .Lsecondary_start
++	//li t0, 0
++	//csrr t1, mhartid
++	//bne t1, t0, .Lsecondary_start
+ 
+ 	/* Save hart ID and DTB physical address */
+ 	mv s0, a0
+@@ -146,7 +149,7 @@ relocate:
+ 	REG_L tp, (a2)
+ 	beqz sp, .Lwait_for_cpu_up
+ 	beqz tp, .Lwait_for_cpu_up
+-	fence
++	fence.i
+ 
+ 	/* Enable virtual memory and relocate to virtual address */
+ 	call relocate
+@@ -170,7 +173,7 @@ boot_sec_cpu:
+ 	csrw sip, zero
+ 	/* Mask all interrupts */
+ 	csrw sie, zero
+-	fence
++	fence.i
+ 
+ 	tail smp_callin
+ #endif
+diff --git a/drivers/net/ethernet/cadence/macb_main.c b/drivers/net/ethernet/cadence/macb_main.c
+index 2cea0fe7..c50a6ff2 100755
+--- a/drivers/net/ethernet/cadence/macb_main.c
++++ b/drivers/net/ethernet/cadence/macb_main.c
+@@ -1440,6 +1440,7 @@ static unsigned int macb_tx_map(struct macb *bp,
+ 				struct sk_buff *skb,
+ 				unsigned int hdrlen)
+ {
++	unsigned long core;
+ 	dma_addr_t mapping;
+ 	unsigned int len, entry, i, tx_head = queue->tx_head;
+ 	struct macb_tx_skb *tx_skb = NULL;
+@@ -1496,7 +1497,7 @@ static unsigned int macb_tx_map(struct macb *bp,
+ 		mapping = dma_map_single(&bp->pdev->dev,
+ 					 skb->data + offset,
+ 					 size, DMA_TO_DEVICE);
+-		printk("mapping=0x%llx\n", mapping);
++		printk("mapping=0x%llx cpu=%d\n", mapping, smp_processor_id());
+ 		if (dma_mapping_error(&bp->pdev->dev, mapping))
+ 			goto dma_error;
+ 		if(size == 1066)
+@@ -1508,6 +1509,8 @@ static unsigned int macb_tx_map(struct macb *bp,
+ 
+ 			dsp_debug[2] = 1;
+ 
++			dsp_debug[5] = smp_processor_id();
++
+ 			while(dsp_debug[2])
+ 				;
+ 
+@@ -1561,7 +1564,7 @@ static unsigned int macb_tx_map(struct macb *bp,
+ 			mapping = dma_map_single(&bp->pdev->dev,
+ 					 lowmem_page_address(skb_frag_page(frag))+frag->page_offset+offset,
+ 					 size, DMA_TO_DEVICE);
+-			printk("fragments:mapping=0x%llx\n", mapping);
++			printk("fragments:mapping=0x%llx cpu=%d\n", mapping, smp_processor_id());
+ 			if((size == 1000) || (size == 1448) || (size == 552))
+ 			{
+ 
+@@ -1571,6 +1574,8 @@ static unsigned int macb_tx_map(struct macb *bp,
+ 
+ 					dsp_debug[2] = 1;
+ 
++					dsp_debug[5] = smp_processor_id();
++
+ 					while(dsp_debug[2])
+ 						;
+ 					mb();
+-- 
+2.36.1
+

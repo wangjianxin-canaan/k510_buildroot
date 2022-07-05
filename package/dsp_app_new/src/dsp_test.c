@@ -35,7 +35,6 @@
 
 #define DSP_BIN_PATH_def "simd_umul8_demo.bin"
 
-
 #ifndef DSP_RESET_VECTOR_def
 #define DSP_RESET_VECTOR_def 0x1f000000
 #endif
