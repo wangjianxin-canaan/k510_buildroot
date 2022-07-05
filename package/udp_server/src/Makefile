@@ -1,4 +1,4 @@
-#CROSS_COMPILE := riscv64-linux-
+CROSS_COMPILE := riscv64-linux-
 
 CC	:= $(CROSS_COMPILE)gcc
 C++	:= $(CROSS_COMPILE)g++
@@ -8,9 +8,9 @@ AR	:= $(CROSS_COMPILE)ar
 AS	:= $(CROSS_COMPILE)as
 LD	:= $(CROSS_COMPILE)ld
 
-OBJ ?= tcp_client
+OBJ ?= tcp_server
 
-$(OBJ): tcp_client.c
+$(OBJ): tcp_server.c
 	$(C++) $(CFLAGS) $^ -L ./ -Wl,-Bdynamic -g -o $@
 	
 clean:

@@ -49,12 +49,13 @@ int main(void)
 
         uint64_t size = dsp_debug[1];
         uint64_t addr = dsp_debug[0] | 0x100000000;//访问bit33地址
+        uint32_t cpu = dsp_debug[5];
         uint8_t data_reg = *(uint8_t *)addr;
         for(int i=0; i<size; i++)
         {
             if(data_reg != *(uint8_t *)(addr + i))
             {
-                printf("i=%d data_reg=0x%x 0x%x 0x%x 0x%x\n", i, data_reg, *(uint8_t *)(addr + i), *(uint8_t *)(addr + i + 3), *(uint8_t *)(addr + i + 32), *(uint8_t *)(addr + i + 64));
+                printf("size=%ld, cpu=%d i=%d data_reg=0x%x 0x%x 0x%x 0x%x\n", size, cpu, i, data_reg, *(uint8_t *)(addr + i), *(uint8_t *)(addr + i + 3), *(uint8_t *)(addr + i + 32), *(uint8_t *)(addr + i + 64));
                 break;
             }
         }
