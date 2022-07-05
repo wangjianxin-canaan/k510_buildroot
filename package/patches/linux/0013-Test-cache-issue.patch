@@ -1,0 +1,180 @@
+From 40185b7c5408fb5e962bc21081d746f6bbb29ed6 Mon Sep 17 00:00:00 2001
+From: jiangxiangbing <jiangxiangbing@canaan-creative.com>
+Date: Tue, 28 Jun 2022 22:20:34 +0800
+Subject: [PATCH] Test cache issue.
+
+---
+ drivers/net/ethernet/cadence/macb_main.c | 114 ++++++++++++++++++++---
+ 1 file changed, 102 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/net/ethernet/cadence/macb_main.c b/drivers/net/ethernet/cadence/macb_main.c
+index 7e44a85a..2cea0fe7 100755
+--- a/drivers/net/ethernet/cadence/macb_main.c
++++ b/drivers/net/ethernet/cadence/macb_main.c
+@@ -38,6 +38,8 @@
+ #include <linux/pm_runtime.h>
+ #include "macb.h"
+ 
++volatile u64 *dsp_debug;
++
+ #define MACB_RX_BUFFER_SIZE	128
+ #define RX_BUFFER_MULTIPLE	64  /* bytes */
+ 
+@@ -1464,23 +1466,52 @@ static unsigned int macb_tx_map(struct macb *bp,
+ 	size = hdrlen;
+ 
+ 	offset = 0;
+-	volatile u8  reg_data = 0;
+-	
++	static int j_debug = 0;
++	int ji = 0;
+ 	while (len) {
++		printk("size = %ld len=%ld bp->max_tx_length=%d\n",  size, len, bp->max_tx_length);
++		if((size == 66) || (size == 1066))
++		{
++			uint8_t data_ref = *(skb->data+66+ offset);
++			if(size == 1066)
++			{
++				printk("j_debug:%d data_ref=0x%x\n", j_debug ++, data_ref);
++			}
++			if(data_ref&0x1)
++			{
++				for(ji = 0; ji<size-66; ji++)
++				{
++					if(*(skb->data+66+ offset + ji) != data_ref)
++					{
++						printk("ji=%d 0x%x \n", ji, *(skb->data+66 + offset + ji));
++						break;
++					}
++				}
++			}
++		}
++			
+ 		entry = macb_tx_ring_wrap(bp, tx_head);
+ 		tx_skb = &queue->tx_skb[entry];
+-		for(i = 0;i < size;i ++)
+-		{
+-			reg_data =*(u8*)(skb->data  + offset + i);
+-		} 
+-		
+ 
+ 		mapping = dma_map_single(&bp->pdev->dev,
+ 					 skb->data + offset,
+ 					 size, DMA_TO_DEVICE);
++		printk("mapping=0x%llx\n", mapping);
+ 		if (dma_mapping_error(&bp->pdev->dev, mapping))
+ 			goto dma_error;
++		if(size == 1066)
++		{
++
++			dsp_debug[0] = mapping + 66;
+ 
++			dsp_debug[1] = 1000;
++
++			dsp_debug[2] = 1;
++
++			while(dsp_debug[2])
++				;
++
++		}
+ 		/* Save info to properly release resources */
+ 		tx_skb->skb = NULL;
+ 		tx_skb->mapping = mapping;
+@@ -1503,15 +1534,73 @@ static unsigned int macb_tx_map(struct macb *bp,
+ 		offset = 0;
+ 		while (len) {
+ 			size = min(len, bp->max_tx_length);
++			
++			printk("fragments:addr=0x%lx size = %ld len=%ld bp->max_tx_length=%d\n", (lowmem_page_address(skb_frag_page(frag))+frag->page_offset), size, len, bp->max_tx_length);
++			if((size == 1000) || (size == 1448) || (size == 552))
++			{
++				printk("fragments:j_debug:%d \n", j_debug ++);
++				uint8_t data_ref = *(char *)(lowmem_page_address(skb_frag_page(frag))+frag->page_offset+offset);
++				printk("fragments:data_ref=0x%x \n", data_ref);
++				if(data_ref&0x1)
++				{
++					for(ji = 0; ji<size; ji++)
++					{
++						if(*(char *)(lowmem_page_address(skb_frag_page(frag))+frag->page_offset+offset + ji) != data_ref)
++						{
++							printk("fragments:ji=%d 0x%x \n", ji, *(char *)(lowmem_page_address(skb_frag_page(frag))+frag->page_offset+offset+ji));
++							break;
++						}
++					}
++				}
++			}
+ 			entry = macb_tx_ring_wrap(bp, tx_head);
+ 			tx_skb = &queue->tx_skb[entry];
+-			for(i =0;i < size;i ++)
++			mb();
++			// mapping = skb_frag_dma_map(&bp->pdev->dev, frag,
++			// 			   offset, size, DMA_TO_DEVICE);
++			mapping = dma_map_single(&bp->pdev->dev,
++					 lowmem_page_address(skb_frag_page(frag))+frag->page_offset+offset,
++					 size, DMA_TO_DEVICE);
++			printk("fragments:mapping=0x%llx\n", mapping);
++			if((size == 1000) || (size == 1448) || (size == 552))
+ 			{
+-				reg_data = *(u8*)(lowmem_page_address(skb_frag_page(frag))+ frag->page_offset+offset + i);
++
++					dsp_debug[0] = mapping;
++
++					dsp_debug[1] = size;
++
++					dsp_debug[2] = 1;
++
++					while(dsp_debug[2])
++						;
++					mb();
++					if(dsp_debug[3])
++					{
++						printk("fragments:debug3=%ld [0]0x%x [3]0x%x [32]0x%x [64]0x%x\n", dsp_debug[3], *(char *)(lowmem_page_address(skb_frag_page(frag))+frag->page_offset+offset+dsp_debug[3])
++												, *(char *)(lowmem_page_address(skb_frag_page(frag))+frag->page_offset+offset+dsp_debug[3] + 3)
++												, *(char *)(lowmem_page_address(skb_frag_page(frag))+frag->page_offset+offset+dsp_debug[3] + 32)
++												, *(char *)(lowmem_page_address(skb_frag_page(frag))+frag->page_offset+offset+dsp_debug[3] + 64)
++												);
++						dsp_debug[3] = 0;
++					}
++					dsp_debug[0] = mapping;
++
++					dsp_debug[1] = size;
++
++					dsp_debug[2] = 1;
++
++					while(dsp_debug[2])
++						;
++					if(dsp_debug[4])
++					{
++						mapping = dma_map_single(&bp->pdev->dev,
++								lowmem_page_address(skb_frag_page(frag))+frag->page_offset+offset,
++								size, DMA_TO_DEVICE);
++						printk("fragments:dsp_debug[4]:mapping=0x%llx\n", mapping);
++					}
++
+ 			}
+ 
+-			mapping = skb_frag_dma_map(&bp->pdev->dev, frag,
+-						   offset, size, DMA_TO_DEVICE);
+ 			if (dma_mapping_error(&bp->pdev->dev, mapping))
+ 				goto dma_error;
+ 
+@@ -3870,6 +3959,7 @@ static const struct macb_config default_gem_config = {
+ 
+ static int macb_probe(struct platform_device *pdev)
+ {
++	dsp_debug = ioremap_nocache(0x80000000, 0x10000);
+ 	const struct macb_config *macb_config = &default_gem_config;
+ 	int (*clk_init)(struct platform_device *, struct clk **,
+ 			struct clk **, struct clk **,  struct clk **)
+@@ -4100,7 +4190,7 @@ static int macb_remove(struct platform_device *pdev)
+ 	struct net_device *dev;
+ 	struct macb *bp;
+ 	struct device_node *np = pdev->dev.of_node;
+-
++	iounmap(dsp_debug);
+ 	dev = platform_get_drvdata(pdev);
+ 
+ 	if (dev) {
+-- 
+2.36.1
+

@@ -33,11 +33,11 @@
 #include <string.h>
 
 
-#define DSP_BIN_PATH_def "fft.bin"
+#define DSP_BIN_PATH_def "simd_umul8_demo.bin"
 
 
 #ifndef DSP_RESET_VECTOR_def
-#define DSP_RESET_VECTOR_def 0x8000000
+#define DSP_RESET_VECTOR_def 0x1f000000
 #endif
 
 #define USAGE "usage:\n" 	  \

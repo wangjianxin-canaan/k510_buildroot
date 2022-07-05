@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KO_HELLO_WORLD
+bool "ko_hello_world"
+depends on BR2_LINUX_KERNEL
+help
+Test for adding driver in buildroot
+
+comment "ko_hello_world driver needs a Linux kernel to be built"
+depends on !BR2_LINUX_KERNEL
