@@ -13,7 +13,8 @@ define UDP_CLIENT_BUILD_CMDS
 endef
 
 define UDP_CLIENT_INSTALL_TARGET_CMDS
-	$(INSTALL) -D -m 0755 $(@D)/udp_client $(TARGET_DIR)/app/udp_client/udp_client
+	$(INSTALL) -D -m 0755 $(@D)/udp.out $(TARGET_DIR)/app/udp_client/udp.out
+	$(INSTALL) -D -m 0755 $(@D)/udp.sh $(TARGET_DIR)/app/udp_client/udp.sh
 endef
 
 $(eval $(generic-package))

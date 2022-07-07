@@ -1,47 +1,63 @@
-#include<stdio.h>  
-#include <stdlib.h>  
-#include<unistd.h>  
-#include<string.h>  
-#include<sys/types.h>  
-#include<sys/socket.h>  
-#include<netinet/in.h>  
-#include<netdb.h>  
-#include <stdio.h>  
-#include <stdlib.h>  
-#include <string.h>  
-#include <unistd.h>  
-#include <sys/types.h>  
-#include <sys/socket.h>  
-#include <netinet/in.h>  
-#include <arpa/inet.h>  
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+#include<stdlib.h>
+#include <errno.h>
 
-// #include <stdio.h>
-// #define __USE_GNU
-// #include <stdio.h>
-// #include <sched.h>
-// #include <stdlib.h>
-// #include <unistd.h>
-// #include <pthread.h>
 
-int main()
+#define  MAX_BUFFER_SIZE  1024
+
+
+int main(int argc, char* argv[])
 {
-	int sockfd = socket(AF_INET,SOCK_DGRAM,0);
 
-	struct sockaddr_in saddr;
- 	memset(&saddr,0,sizeof(saddr));
- 	saddr.sin_family = AF_INET;
- 	saddr.sin_port = htons(6000);
-	saddr.sin_addr.s_addr = inet_addr("10.100.232.133");
+    if (argc < 3)
+    {
+	    printf("use help:%s ip port\n",argv[0]);
+	    return -1;
+    }	    
+    char*pIP = argv[1];
+    char*pPort = argv[2];
+    //printf("ip:%s,port:%s\n",pIP,pPort);
 
-	char buff[1024];
+    struct sockaddr_in addr;
+    int sock;
+
+    addr.sin_family     = AF_INET;
+    addr.sin_port       = htons(atoi(pPort));
+    addr.sin_addr.s_addr = inet_addr(pIP);
+
+    if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+    {
+	   printf("=======socket create error errno %x :%s \n", errno, strerror(errno));
+	   return -1;
+    }	
+	//printf("sock =%x\n", sock);
 	
-	for(int i=0; i<2000; i++)
-	{
-		memset(buff, (i*2)&0xfe, 1024);
-		sendto(sockfd, buff, 1024, 0, (struct sockaddr*)&saddr, sizeof(saddr));
-		// usleep(1*1000);
-	}
 
-	close(sockfd);
-	exit(0);
+
+	char sBuffer[MAX_BUFFER_SIZE] = {0};
+	static int ncount = 0;
+	int nRet = 0;
+	for(int i =0;i < 1000;i++)
+	{
+		memset(sBuffer,(i%100)&0xfe,MAX_BUFFER_SIZE);
+		nRet = sendto(sock, sBuffer, MAX_BUFFER_SIZE, 0, (struct sockaddr *) &addr, sizeof(addr));
+		if (nRet < 0)
+		{
+			printf("sendto error.  nRet %x errno %x : %s\n", nRet, errno, strerror(errno));
+			close(sock);
+			return -1;
+		}
+		usleep(1000*10);
+	}
+	printf("process end \n");
+
+    return 0;
 }
+
