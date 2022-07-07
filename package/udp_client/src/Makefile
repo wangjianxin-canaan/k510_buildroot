@@ -8,7 +8,7 @@ AR	:= $(CROSS_COMPILE)ar
 AS	:= $(CROSS_COMPILE)as
 LD	:= $(CROSS_COMPILE)ld
 
-OBJ ?= udp_client
+OBJ ?= udp.out
 
 $(OBJ): udp_client.c
 	$(C++) $(CFLAGS) $^ -L ./ -Wl,-Bdynamic -g -o $@

@@ -1,4 +1,4 @@
-#CROSS_COMPILE := riscv64-linux-
+CROSS_COMPILE := riscv64-linux-
 
 CC	:= $(CROSS_COMPILE)gcc
 C++	:= $(CROSS_COMPILE)g++
