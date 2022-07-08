@@ -1,0 +1,41 @@
+From f08f037d58be3e9cd4beb2ecaa21c0e6afde34ac Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Fri, 8 Jul 2022 10:20:48 +0800
+Subject: [PATCH] remove debug info
+
+---
+ drivers/net/ethernet/cadence/macb_main.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/cadence/macb_main.c b/drivers/net/ethernet/cadence/macb_main.c
+index c50a6ff2..2d4a80f3 100755
+--- a/drivers/net/ethernet/cadence/macb_main.c
++++ b/drivers/net/ethernet/cadence/macb_main.c
+@@ -1470,13 +1470,13 @@ static unsigned int macb_tx_map(struct macb *bp,
+ 	static int j_debug = 0;
+ 	int ji = 0;
+ 	while (len) {
+-		printk("size = %ld len=%ld bp->max_tx_length=%d\n",  size, len, bp->max_tx_length);
++		//printk("size = %ld len=%ld bp->max_tx_length=%d\n",  size, len, bp->max_tx_length);
+ 		if((size == 66) || (size == 1066))
+ 		{
+ 			uint8_t data_ref = *(skb->data+66+ offset);
+ 			if(size == 1066)
+ 			{
+-				printk("j_debug:%d data_ref=0x%x\n", j_debug ++, data_ref);
++				//printk("j_debug:%d data_ref=0x%x\n", j_debug ++, data_ref);
+ 			}
+ 			if(data_ref&0x1)
+ 			{
+@@ -1497,7 +1497,7 @@ static unsigned int macb_tx_map(struct macb *bp,
+ 		mapping = dma_map_single(&bp->pdev->dev,
+ 					 skb->data + offset,
+ 					 size, DMA_TO_DEVICE);
+-		printk("mapping=0x%llx cpu=%d\n", mapping, smp_processor_id());
++		//printk("mapping=0x%llx cpu=%d\n", mapping, smp_processor_id());
+ 		if (dma_mapping_error(&bp->pdev->dev, mapping))
+ 			goto dma_error;
+ 		if(size == 1066)
+-- 
+2.30.2
+
