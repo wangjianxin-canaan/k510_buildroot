@@ -2,8 +2,9 @@
 ::sysinit:/etc/init.d/rc.sysinit
 
 # run gettys on the serial ports
-::respawn:-/sbin/getty -n -L ttyS0 115200 vt100 -l usr/autologin.profile
+#::respawn:-/sbin/getty -n -L ttyS0 115200 vt100 -l usr/autologin.profile
 ttyS0::sysinit:etc/init.d/run.sh
+console::respawn:/sbin/getty -L  console 0 vt100
 
 # stuff to do before rebooting
 ::ctrlaltdel:/etc/init.d/reboot
