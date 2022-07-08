@@ -54,9 +54,9 @@ int main(int argc, char* argv[])
 			close(sock);
 			return -1;
 		}
-		usleep(1000*10);
+		usleep(1);
 	}
-	printf("process end \n");
+	printf("\nprocess end \n");
 
     return 0;
 }
