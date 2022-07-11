@@ -11,7 +11,7 @@
 	};
 
 	chosen {
-		bootargs = "root=/dev/nfs rw nfsroot=10.100.226.63:/home/yangguang/nfs_server/k510_nfsroot ip=10.100.226.221:10.100.226.63:10.100.226.254:255.255.255.0:k510:eth0:off console=ttyS0,115200n8 debug loglevel=7";
+		bootargs = "console=ttyS0,115200n8 debug loglevel=7";
 		stdout-path = "uart0:115200n8";
 	};
 
