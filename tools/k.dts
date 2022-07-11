@@ -174,7 +174,7 @@
 			};
 
 			gnne@94000000 {
-				status = "okay";
+				status = "disabled";
 				compatible = "k510-gnne";
 				reg = <0x00 0x94180000 0x00 0x80000>;
 				interrupt-parent = <0x06>;
@@ -273,14 +273,14 @@
 			};
 
 			storage_ahb {
-				status = "okay";
+				status = "disabled";
 				compatible = "simple-bus";
 				#address-cells = <0x02>;
 				#size-cells = <0x02>;
 				ranges;
 
 				sdios@92400000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "canaan, arasan-sdio-slave";
 					reg = <0x00 0x92400000 0x00 0x20000>;
 					resets = <0x04 0xec 0x01 0x1f 0x00>;
@@ -290,14 +290,14 @@
 			};
 
 			peri_ahb {
-				status = "okay";
+				status = "disabled";
 				compatible = "simple-bus";
 				#address-cells = <0x02>;
 				#size-cells = <0x02>;
 				ranges;
 
 				spi@96080000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "snps,dwc-ssi-1.01a";
 					reg = <0x00 0x96080000 0x00 0x1000>;
 					num-cs = <0x04>;
@@ -363,7 +363,7 @@
 				};
 
 				spi@96090000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "snps,dwc-ssi-1.01a";
 					reg = <0x00 0x96090000 0x00 0x1000>;
 					num-cs = <0x01>;
@@ -392,7 +392,7 @@
 				};
 
 				spi@960a0000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "snps,dwc-ssi-1.01a";
 					reg = <0x00 0x960a0000 0x00 0x1000>;
 					num-cs = <0x01>;
@@ -421,7 +421,7 @@
 				};
 
 				spi@960b0000 {
-					status = "disable";
+					status = "disabled";
 					compatible = "snps,dwc-ssi-1.01a";
 					reg = <0x00 0x960b0000 0x00 0x1000>;
 					num-cs = <0x01>;
@@ -465,7 +465,7 @@
 				ranges;
 
 				sdio@93000000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "socionext,uniphier-sd4hc\0cdns,sd4hc";
 					reg = <0x00 0x93000000 0x00 0x2000>;
 					interrupt-parent = <0x06>;
@@ -481,7 +481,7 @@
 				};
 
 				sdio@93010000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "socionext,uniphier-sd4hc\0cdns,sd4hc";
 					reg = <0x00 0x93010000 0x00 0x2000>;
 					interrupt-parent = <0x06>;
@@ -508,7 +508,7 @@
 				};
 
 				sdio@93020000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "socionext,uniphier-sd4hc\0cdns,sd4hc";
 					reg = <0x00 0x93020000 0x00 0x2000>;
 					interrupt-parent = <0x06>;
@@ -623,7 +623,7 @@
 				};
 
 				serial@96020000 {
-					status = "disable";
+					status = "disabled";
 					compatible = "snps,dw-apb-uart";
 					reg = <0x00 0x96020000 0x00 0x100>;
 					resets = <0x04 0x60 0x01 0x1f 0x00>;
@@ -632,7 +632,7 @@
 				};
 
 				serial@96030000 {
-					status = "disable";
+					status = "disabled";
 					compatible = "snps,dw-apb-uart";
 					reg = <0x00 0x96030000 0x00 0x100>;
 					resets = <0x04 0x64 0x01 0x1f 0x00>;
@@ -641,7 +641,7 @@
 				};
 
 				i2ss@96050000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "snps,dw-apb-i2s";
 					reg = <0x00 0x96050000 0x00 0x100>;
 					resets = <0x04 0x6c 0x01 0x1f 0x00>;
@@ -650,7 +650,7 @@
 				};
 
 				i2s@96060000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "snps,designware-i2s";
 					reg = <0x00 0x96060000 0x00 0x400>;
 					clocks = <0x21>;
@@ -3471,7 +3471,7 @@
 			};
 
 			isp@92600000 {
-				status = "okay";
+				status = "disabled";
 				compatible = "canaan,k510-isp";
 				reg = <0x00 0x92600000 0x00 0x200000>;
 				interrupt-parent = <0x06>;
@@ -3488,7 +3488,7 @@
 			};
 
 			isp1@92600000 {
-				status = "okay";
+				status = "disabled";
 				compatible = "canaan,k510-isp1";
 				reg = <0x00 0x92600000 0x00 0x200000>;
 				interrupt-parent = <0x06>;
@@ -3554,7 +3554,7 @@
 			};
 
 			twod@92720000 {
-				status = "okay";
+				status = "disabled";
 				compatible = "k510, kendrty_2d";
 				reg = <0x00 0x92720000 0x00 0x10000>;
 				interrupt-parent = <0x06>;
@@ -3564,7 +3564,7 @@
 			};
 
 			display@92700000 {
-				status = "okay";
+				status = "disabled";
 				compatible = "canaan,k510-display\0microsharp,display";
 				reg = <0x00 0x92700000 0x00 0x40000>;
 				resets = <0x04 0x164 0x01 0x1f 0x00 0x04 0x16c 0x01 0x1f 0x00 0x04 0x174 0x01 0x1f 0x00 0x04 0x17c 0x01 0x1f 0x00>;
@@ -3577,7 +3577,7 @@
 				reg = <0x00 0x92718000 0x00 0x100>;
 				framerate = <0x1e>;
 				#phy-cells = <0x00>;
-				status = "okay";
+				status = "disabled";
 				clocks = <0x59 0x3d 0x71 0x72>;
 				clock-names = "mipi_conner\0mipi_ref\0mipi_txphy_ref\0mipi_txphy_pll";
 				phandle = <0x77>;
@@ -3586,13 +3586,13 @@
 			display-subsystem {
 				compatible = "kendryte,display-subsystem";
 				ports = <0x73>;
-				status = "okay";
+				status = "disabled";
 			};
 
 			vop@92700000 {
 				compatible = "kendryte,kendryte-k510-vop";
 				reg = <0x00 0x92700000 0x00 0x10000>;
-				status = "okay";
+				status = "disabled";
 				interrupt-parent = <0x06>;
 				interrupts = <0x43 0x04>;
 				clocks = <0x74 0x75>;
@@ -3619,7 +3619,7 @@
 				phy-names = "mipi_dphy";
 				#size-cells = <0x00>;
 				#address-cells = <0x01>;
-				status = "okay";
+				status = "disabled";
 				clocks = <0x78 0x79 0x7a>;
 				clock-names = "dsi_apb\0dsi_system\0display_pixel";
 
@@ -3702,7 +3702,7 @@
 			};
 
 			h264@92740000 {
-				status = "okay";
+				status = "disabled";
 				compatible = "al,al5r";
 				reg = <0x00 0x92740000 0x00 0x10000>;
 				interrupt-parent = <0x06>;
