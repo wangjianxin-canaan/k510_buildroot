@@ -62,7 +62,7 @@ export auto=
 
 
 
-
+exit
 #
 
 dmesg > dmesg_boot.log
