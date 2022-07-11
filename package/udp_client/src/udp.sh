@@ -2,7 +2,7 @@
 
 cd /app/dsp_app_new/
 ./dsp_app simd_umul8_demo.bin
-cd /app/
+cd /app/udp_client
 
 ifconfig eth0 192.168.0.2
 arp -s 192.168.0.1  00:19:56:6F:87:D2

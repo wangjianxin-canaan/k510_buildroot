@@ -546,6 +546,7 @@
 							full-duplex;
 						};
 				};
+                
 
 				pdma@93040000 {
 					status = "okay";
@@ -3226,7 +3227,7 @@
 				};
 
 				i2c@97060000 {
-					status = "disable";
+					status = "disabled";
 					compatible = "snps,designware-i2c";
 					reg = <0x00 0x97060000 0x00 0x100>;
 					interrupt-parent = <0x06>;
@@ -3238,7 +3239,7 @@
 				};
 
 				i2c@97070000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "snps,designware-i2c";
 					reg = <0x00 0x97070000 0x00 0x100>;
 					interrupt-parent = <0x06>;
@@ -3273,7 +3274,7 @@
 				};
 
 				i2c@97080000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "snps,designware-i2c";
 					reg = <0x00 0x97080000 0x00 0x100>;
 					interrupt-parent = <0x06>;
@@ -3302,7 +3303,7 @@
 				};
 
 				i2c@97090000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "snps,designware-i2c";
 					reg = <0x00 0x97090000 0x00 0x100>;
 					interrupt-parent = <0x06>;
@@ -3334,7 +3335,7 @@
 				};
 
 				i2c@970a0000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "snps,designware-i2c";
 					reg = <0x00 0x970a0000 0x00 0x100>;
 					interrupt-parent = <0x06>;
@@ -3369,7 +3370,7 @@
 				};
 
 				i2c@970b0000 {
-					status = "disable";
+					status = "disabled";
 					compatible = "snps,designware-i2c";
 					reg = <0x00 0x970b0000 0x00 0x100>;
 					resets = <0x04 0x44 0x02 0x00 0x02>;
@@ -3377,7 +3378,7 @@
 				};
 
 				i2c@970c0000 {
-					status = "disable";
+					status = "disabled";
 					compatible = "snps,designware-i2c";
 					reg = <0x00 0x970c0000 0x00 0x100>;
 					resets = <0x04 0x44 0x02 0x00 0x03>;
@@ -3385,7 +3386,7 @@
 				};
 
 				rtc@970d0000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "canaan,k510-rtc";
 					reg = <0x00 0x970d0000 0x00 0x100>;
 					interrupt-parent = <0x06>;
@@ -3408,7 +3409,7 @@
 				};
 
 				tsensor@970e0300 {
-					status = "okay";
+					status = "disabled";
 					compatible = "canaan,k510-tsensor";
 					reg = <0x00 0x970e0300 0x00 0x100>;
 					interrupt-parent = <0x06>;
@@ -3417,7 +3418,7 @@
 				};
 
 				pwm0@970f0000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "canaan,k510-pwm";
 					reg = <0x00 0x970f0000 0x00 0x40>;
 					clocks = <0x55>;
@@ -3429,7 +3430,7 @@
 				};
 
 				pwm1@970f0000 {
-					status = "okay";
+					status = "disabled";
 					compatible = "canaan,k510-pwm";
 					reg = <0x00 0x970f0040 0x00 0x40>;
 					clocks = <0x55>;
