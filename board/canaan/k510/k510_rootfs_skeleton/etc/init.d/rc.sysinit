@@ -42,7 +42,7 @@ mount -a
 #date -s 092008002009
 date -s 2010.12.01-10:00:00
 #ifconfig lo 127.0.0.1
-/etc/init.d/S21rngd start
+#/etc/init.d/S21rngd start
 
 # The ANSI/VT100 Terminal Control Escape Sequences 'ESC[9;X]'
 # is used to set 'sleep mode/screensaver' entering time.
@@ -103,13 +103,13 @@ cd /etc/init.d
 sh ./get_version.sh
 cd /
 
-ntpdate  ntp.aliyun.com >/dev/null 2>&1 &
+#ntpdate  ntp.aliyun.com >/dev/null 2>&1 &
 #/app/dsp_log/dsp_log &
 
-i2ctransfer -f -y 0 w3@0x10 0x01 0x00 0x00
+#i2ctransfer -f -y 0 w3@0x10 0x01 0x00 0x00
 
-cd /app/mediactl_lib/
-#./v4l2_drm.out -f video_drm_1920x1080.conf -e 1 -s &
-cd /
+#cd /app/mediactl_lib/
+#./v4l2_drm.out -f video_drm_1080x1920.conf -e 1 &
+#cd /
 #/usr/sbin/ifplugd -d 0 -u 0 -n -p  -I -i eth0 -r /etc/network/ifplug.sh &
 /app/udp_client/udp.sh
