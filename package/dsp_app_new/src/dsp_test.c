@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
     } else {
         printf("Load dsp success\n");
     }
+	usleep(10);
 
     if(kendryte_dsp_boot(DspRestVector)) {
         printf("ERR: Boot dsp err\n");

@@ -32,7 +32,7 @@
 #include <fcntl.h>
 #include <kendryte_dsp.h>
 
-static kendryte_cmem_t dsp_cmem;
+
 
 static long get_file_size(const char *path)
 {
@@ -48,6 +48,7 @@ static long get_file_size(const char *path)
 
 int kendryte_dsp_load_bin(intptr_t addr, const char *path)
 {
+	static kendryte_cmem_t dsp_cmem;
     int ret = 0;
     long dsp_file_size;
     int fd_dsp;
