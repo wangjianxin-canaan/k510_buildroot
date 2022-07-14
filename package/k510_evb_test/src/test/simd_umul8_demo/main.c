@@ -26,7 +26,7 @@
 #include <nds_intrinsic.h>
 #include <stdint.h>
 
-volatile uint64_t *dsp_debug = 0x180000000;
+volatile uint64_t *dsp_debug = 0x11f000000;
 void dump_buff(char * prompt,char *buff, int len)
 {
     int i;
