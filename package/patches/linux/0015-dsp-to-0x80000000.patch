@@ -1,0 +1,74 @@
+From 24a00514bfc79691ebb2604bbf562f9c6c6435b0 Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Thu, 14 Jul 2022 09:49:00 +0800
+Subject: [PATCH] dsp to 0x80000000
+
+---
+ drivers/misc/canaan/k510-dsp/k510-dsp.c  | 24 +++++++++++++++++++++++-
+ drivers/net/ethernet/cadence/macb_main.c |  2 +-
+ 2 files changed, 24 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/misc/canaan/k510-dsp/k510-dsp.c b/drivers/misc/canaan/k510-dsp/k510-dsp.c
+index c2b2640d..ac156154 100644
+--- a/drivers/misc/canaan/k510-dsp/k510-dsp.c
++++ b/drivers/misc/canaan/k510-dsp/k510-dsp.c
+@@ -22,6 +22,8 @@
+ #include <linux/of_device.h>
+ #include <linux/cacheinfo.h>
+ #include <linux/sizes.h>
++#include <linux/crc32.h>
++
+ #include <asm/csr.h>
+ #include <asm/andesv5/proc.h>
+ #include <asm/andesv5/csr.h>
+@@ -49,13 +51,33 @@ static struct dsp_plat *plat;
+ 
+ static int dsp_boot(unsigned long dsp_reset_vec)
+ {
++	uint32_t crc1,crc2;
++	unsigned long p1,p2;
++	printk("dsp_boot =%lx \n", dsp_reset_vec);
++	p1 = ioremap(dsp_reset_vec | 0x100000000, 50*1024);
++	p2 = ioremap(dsp_reset_vec , 50*1024);
++	crc2 = crc32(0xFFFFFFFFU,p1, 50*1024);
++	crc1 = crc32(0xFFFFFFFFU,p2, 50*1024);	
++	if(crc1 != crc2)
++	{
++		printk("error crc1 =%x, %x \n", crc1,crc2);		
++		print_hex_dump_bytes("bit33",DUMP_PREFIX_OFFSET,p1 , 0x200);
++		print_hex_dump_bytes("",DUMP_PREFIX_OFFSET, p2, 0x200);
++	}
++
++	iounmap(p1);
++	iounmap(p2);
++	
++	
++	
++	
+     iowrite32(1 << 30 | 1, plat->sysctl_base + SYSCTL_RST_REG_OFFSET + SYSCTL_AX25P_RST_CTL_OFF);
+ 
+     iowrite32(dsp_reset_vec, plat->sysctl_base + SYSCTL_AX25P_CORE_RSTVEC_OFF);
+ 
+     iowrite32(0, plat->sysctl_base + SYSCTL_RST_REG_OFFSET + SYSCTL_AX25P_RST_CTL_OFF);
+ 
+-    // printk("k510-dsp: dsp_boot, ax25p_core_rstvec=%x , ax25p_rst_ctl=%x \n", ioread32(plat->sysctl_base + SYSCTL_AX25P_CORE_RSTVEC_OFF), ioread32(plat->sysctl_base + SYSCTL_RST_REG_OFFSET + SYSCTL_AX25P_RST_CTL_OFF));
++     printk("k510-dsp: dsp_boot, ax25p_core_rstvec=%x , ax25p_rst_ctl=%x \n", ioread32(plat->sysctl_base + SYSCTL_AX25P_CORE_RSTVEC_OFF), ioread32(plat->sysctl_base + SYSCTL_RST_REG_OFFSET + SYSCTL_AX25P_RST_CTL_OFF));
+     return 0;
+ }
+ 
+diff --git a/drivers/net/ethernet/cadence/macb_main.c b/drivers/net/ethernet/cadence/macb_main.c
+index 2d4a80f3..ce37d596 100755
+--- a/drivers/net/ethernet/cadence/macb_main.c
++++ b/drivers/net/ethernet/cadence/macb_main.c
+@@ -3964,7 +3964,7 @@ static const struct macb_config default_gem_config = {
+ 
+ static int macb_probe(struct platform_device *pdev)
+ {
+-	dsp_debug = ioremap_nocache(0x80000000, 0x10000);
++	dsp_debug = ioremap_nocache(0x1f000000, 0x10000);
+ 	const struct macb_config *macb_config = &default_gem_config;
+ 	int (*clk_init)(struct platform_device *, struct clk **,
+ 			struct clk **, struct clk **,  struct clk **)
+-- 
+2.30.2
+
