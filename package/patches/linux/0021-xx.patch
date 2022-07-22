@@ -1,0 +1,137 @@
+From e2534c68e97d598c904009312af53558034907e2 Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Fri, 22 Jul 2022 21:18:59 +0800
+Subject: [PATCH] xx
+
+---
+ arch/riscv/andesv5/cache.c               | 23 ++++++++++++++++-------
+ drivers/net/ethernet/cadence/macb_main.c | 13 +++++++------
+ 2 files changed, 23 insertions(+), 13 deletions(-)
+
+diff --git a/arch/riscv/andesv5/cache.c b/arch/riscv/andesv5/cache.c
+index c37c7d54..f6f57e0d 100755
+--- a/arch/riscv/andesv5/cache.c
++++ b/arch/riscv/andesv5/cache.c
+@@ -70,14 +70,23 @@ static void riscv_l1_flush(void *data)
+ 	struct l1_flush_info *info = (struct l1_flush_info *)data;
+ 	ulong start=info->start;
+ 	ulong end=info->end;
++	ulong flags;
+ 
++	
+ 	start = start & (~(info->cache_line  - 1));
+ 	
++	get_cpu();
+ 	while (end > start) 
+ 	{
++		//local_irq_save(flags);	
++		
+ 		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, start);
+ 		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
++		//local_irq_restore(flags);
++		start += info->cache_line;
+ 	}
++	put_cpu();
++	
+ 	return ;
+ }
+ 
+@@ -177,7 +186,7 @@ void cpu_dma_wb_range(unsigned long start, unsigned long end)
+ 
+ 	struct l1_flush_info info;
+ 
+-	
++	start = start & (~(line_size - 1));
+ 	info.start = start;
+ 	info.end=end;
+ 	info.cache_line = line_size;
+@@ -296,20 +305,20 @@ void k510_sharemem_wb_range(unsigned long va_start, unsigned long pa_start, unsi
+ 
+ 	struct l1_flush_info info;
+ 
+-	
++	va_start = va_start & (~(line_size - 1));
+ 	info.start = va_start;
+ 	info.end=va_end;
+ 	info.cache_line = line_size;
+ 
+-	
+-
+-	riscv_l1_flush_on_all_cpu(&info);
+-
+-	local_irq_save(flags);
+ 	__asm__ __volatile__(
+         "li t6, 0x00040000\t\n"
+         "csrs sstatus, t6\t\n"
+     );
++
++	riscv_l1_flush_on_all_cpu(&info);
++
++	local_irq_save(flags);
++	
+ 	va_start = va_start & (~(line_size - 1));
+ 	pa_start = pa_start & (~(line_size - 1));
+ 	k510_sharemem_dcache_wb_range(va_start, pa_start, va_end, line_size);
+diff --git a/drivers/net/ethernet/cadence/macb_main.c b/drivers/net/ethernet/cadence/macb_main.c
+index c31f24f7..dc9c2a7a 100755
+--- a/drivers/net/ethernet/cadence/macb_main.c
++++ b/drivers/net/ethernet/cadence/macb_main.c
+@@ -1436,7 +1436,7 @@ static void macb_poll_controller(struct net_device *dev)
+ static unsigned int macb_tx_map(struct macb *bp,
+ 				struct macb_queue *queue,
+ 				struct sk_buff *skb,
+-				unsigned int hdrlen)
++				unsigned int hdrlen, unsigned long *flags)
+ {
+ 	dma_addr_t mapping;
+ 	unsigned int len, entry, i, tx_head = queue->tx_head;
+@@ -1474,10 +1474,11 @@ static unsigned int macb_tx_map(struct macb *bp,
+ 			reg_data =*(u8*)(skb->data  + offset + i);
+ 		} 
+ 		
+-
++		spin_unlock_irqrestore(&bp->lock, *flags);
+ 		mapping = dma_map_single(&bp->pdev->dev,
+ 					 skb->data + offset,
+ 					 size, DMA_TO_DEVICE);
++		spin_lock_irqsave(&bp->lock, *flags);
+ 		if (dma_mapping_error(&bp->pdev->dev, mapping))
+ 			goto dma_error;
+ 
+@@ -1722,13 +1723,13 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		desc_cnt += DIV_ROUND_UP(frag_size, bp->max_tx_length);
+ 	}
+ 
+-	spin_lock(&bp->lock);
++	spin_lock_irqsave(&bp->lock,flags);
+ 
+ 	/* This is a hard error, log it. */
+ 	if (CIRC_SPACE(queue->tx_head, queue->tx_tail,
+ 		       bp->tx_ring_size) < desc_cnt) {
+ 		netif_stop_subqueue(dev, queue_index);
+-		spin_unlock(&bp->lock);
++		spin_unlock_irqrestore(&bp->lock,flags);
+ 		netdev_dbg(bp->dev, "tx_head = %u, tx_tail = %u\n",
+ 			   queue->tx_head, queue->tx_tail);
+ 		return NETDEV_TX_BUSY;
+@@ -1740,7 +1741,7 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	}
+ 	
+ 	/* Map socket buffer for DMA transfer */
+-	if (!macb_tx_map(bp, queue, skb, hdrlen)) {
++	if (!macb_tx_map(bp, queue, skb, hdrlen, &flags)) {
+ 		dev_kfree_skb_any(skb);
+ 		printk("=========macb_tx_map errorz\n");
+ 		goto unlock;
+@@ -1755,7 +1756,7 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		netif_stop_subqueue(dev, queue_index);
+ 
+ unlock:
+-	spin_unlock(&bp->lock);
++	spin_unlock_irqrestore(&bp->lock, flags);
+ 
+ 	return NETDEV_TX_OK;
+ }
+-- 
+2.17.1
+
