@@ -1,0 +1,168 @@
+From 6dc3dac92b68af0a0b261e8fb501895653a74fd0 Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Fri, 22 Jul 2022 20:07:56 +0800
+Subject: [PATCH] irq_save
+
+---
+ arch/riscv/andesv5/cache.c               | 55 ++++++++++++++++++------
+ drivers/net/ethernet/cadence/macb_main.c |  8 ++--
+ 2 files changed, 46 insertions(+), 17 deletions(-)
+
+diff --git a/arch/riscv/andesv5/cache.c b/arch/riscv/andesv5/cache.c
+index d06536bf..c37c7d54 100755
+--- a/arch/riscv/andesv5/cache.c
++++ b/arch/riscv/andesv5/cache.c
+@@ -59,20 +59,32 @@ static bool riscv_l1_flush_cond(int cpu, void *info)
+ 	return 1;
+ }
+ 
+-
++struct  l1_flush_info{
++	ulong start;
++	ulong end;
++	ulong cache_line;
++};
+ 
+ static void riscv_l1_flush(void *data)
+ {
+-	unsigned long add  = *(unsigned long*)data;
+-	custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, add);
+-	custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
++	struct l1_flush_info *info = (struct l1_flush_info *)data;
++	ulong start=info->start;
++	ulong end=info->end;
++
++	start = start & (~(info->cache_line  - 1));
++	
++	while (end > start) 
++	{
++		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, start);
++		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
++	}
+ 	return ;
+ }
+ 
+-static unsigned int riscv_l1_flush_on_all_cpu(unsigned long add )
++static unsigned int riscv_l1_flush_on_all_cpu(struct l1_flush_info *info)
+ {
+ 
+-	on_each_cpu_cond(riscv_l1_flush_cond, riscv_l1_flush, &add, 1 , GFP_ATOMIC);
++	on_each_cpu_cond(riscv_l1_flush_cond, riscv_l1_flush, info, 1 , GFP_ATOMIC);
+ 	return 0;
+ }
+ 
+@@ -90,7 +102,6 @@ void cpu_dcache_wb_range(unsigned long start, unsigned long end, int line_size)
+ 	unsigned long pa;
+ 
+ 	while (end > start) {
+-		riscv_l1_flush_on_all_cpu(start);
+ 
+ 		if (l2c_base) {
+ 			pa = virt_to_phys(start);
+@@ -164,10 +175,19 @@ void cpu_dma_wb_range(unsigned long start, unsigned long end)
+ 	unsigned long flags;
+ 	unsigned long line_size = get_cache_line_size();
+ 
+-	//local_irq_save(flags);
++	struct l1_flush_info info;
++
++	
++	info.start = start;
++	info.end=end;
++	info.cache_line = line_size;
++
++	riscv_l1_flush_on_all_cpu(&info);
++	
++	local_irq_save(flags);	
+ 	start = start & (~(line_size - 1));
+ 	cpu_dcache_wb_range(start, end, line_size);
+-	//local_irq_restore(flags);
++	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL(cpu_dma_wb_range);
+ 
+@@ -252,7 +272,6 @@ void k510_sharemem_dcache_wb_range(unsigned long va_start, unsigned long pa_star
+ 	}
+ #else
+ 	while (va_end > va_start) {
+-		riscv_l1_flush_on_all_cpu(va_start);
+ 
+ 		if (l2c_base) {
+ 			writel(pa_start, (void*)(l2c_base + L2C_REG_CN_ACC_OFFSET(mhartid)));
+@@ -274,7 +293,19 @@ void k510_sharemem_wb_range(unsigned long va_start, unsigned long pa_start, unsi
+ 	unsigned long line_size = get_cache_line_size();
+ 	unsigned long va_end = va_start + size;
+ 
+-	//local_irq_save(flags);
++
++	struct l1_flush_info info;
++
++	
++	info.start = va_start;
++	info.end=va_end;
++	info.cache_line = line_size;
++
++	
++
++	riscv_l1_flush_on_all_cpu(&info);
++
++	local_irq_save(flags);
+ 	__asm__ __volatile__(
+         "li t6, 0x00040000\t\n"
+         "csrs sstatus, t6\t\n"
+@@ -286,7 +317,7 @@ void k510_sharemem_wb_range(unsigned long va_start, unsigned long pa_start, unsi
+         "li t6, 0x00040000\t\n"
+         "csrc sstatus, t6\t\n"
+     );
+-	//local_irq_restore(flags);
++	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL(k510_sharemem_wb_range);
+ 
+diff --git a/drivers/net/ethernet/cadence/macb_main.c b/drivers/net/ethernet/cadence/macb_main.c
+index 4c569045..c31f24f7 100755
+--- a/drivers/net/ethernet/cadence/macb_main.c
++++ b/drivers/net/ethernet/cadence/macb_main.c
+@@ -1722,13 +1722,13 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		desc_cnt += DIV_ROUND_UP(frag_size, bp->max_tx_length);
+ 	}
+ 
+-	spin_lock_irqsave(&bp->lock, flags);
++	spin_lock(&bp->lock);
+ 
+ 	/* This is a hard error, log it. */
+ 	if (CIRC_SPACE(queue->tx_head, queue->tx_tail,
+ 		       bp->tx_ring_size) < desc_cnt) {
+ 		netif_stop_subqueue(dev, queue_index);
+-		spin_unlock_irqrestore(&bp->lock, flags);
++		spin_unlock(&bp->lock);
+ 		netdev_dbg(bp->dev, "tx_head = %u, tx_tail = %u\n",
+ 			   queue->tx_head, queue->tx_tail);
+ 		return NETDEV_TX_BUSY;
+@@ -1739,14 +1739,12 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		goto unlock;
+ 	}
+ 	
+-	spin_unlock_irqrestore(&bp->lock, flags);
+ 	/* Map socket buffer for DMA transfer */
+ 	if (!macb_tx_map(bp, queue, skb, hdrlen)) {
+ 		dev_kfree_skb_any(skb);
+ 		printk("=========macb_tx_map errorz\n");
+ 		goto unlock;
+ 	}
+-	spin_lock_irqsave(&bp->lock, flags);
+ 	/* Make newly initialized descriptor visible to hardware */
+ 	wmb();
+ 	skb_tx_timestamp(skb);
+@@ -1757,7 +1755,7 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		netif_stop_subqueue(dev, queue_index);
+ 
+ unlock:
+-	spin_unlock_irqrestore(&bp->lock, flags);
++	spin_unlock(&bp->lock);
+ 
+ 	return NETDEV_TX_OK;
+ }
+-- 
+2.17.1
+

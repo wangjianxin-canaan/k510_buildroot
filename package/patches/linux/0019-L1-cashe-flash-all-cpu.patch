@@ -1,0 +1,121 @@
+From 764d0c7814d11315b48c2d09bb4b6a0e65764331 Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Fri, 22 Jul 2022 19:15:21 +0800
+Subject: [PATCH] L1 cashe flash all cpu
+
+---
+ arch/riscv/andesv5/cache.c               | 38 +++++++++++++++++++-----
+ drivers/net/ethernet/cadence/macb_main.c |  5 ++--
+ 2 files changed, 33 insertions(+), 10 deletions(-)
+
+diff --git a/arch/riscv/andesv5/cache.c b/arch/riscv/andesv5/cache.c
+index 7a9270bd..d06536bf 100755
+--- a/arch/riscv/andesv5/cache.c
++++ b/arch/riscv/andesv5/cache.c
+@@ -54,6 +54,30 @@ inline int get_cache_line_size(void)
+ 	return cpu_ci->dcache_line_size;
+ }
+ 
++static bool riscv_l1_flush_cond(int cpu, void *info)
++{
++	return 1;
++}
++
++
++
++static void riscv_l1_flush(void *data)
++{
++	unsigned long add  = *(unsigned long*)data;
++	custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, add);
++	custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
++	return ;
++}
++
++static unsigned int riscv_l1_flush_on_all_cpu(unsigned long add )
++{
++
++	on_each_cpu_cond(riscv_l1_flush_cond, riscv_l1_flush, &add, 1 , GFP_ATOMIC);
++	return 0;
++}
++
++
++
+ 
+ static uint32_t cpu_l2c_get_cctl_status(void)
+ {
+@@ -66,8 +90,7 @@ void cpu_dcache_wb_range(unsigned long start, unsigned long end, int line_size)
+ 	unsigned long pa;
+ 
+ 	while (end > start) {
+-		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, start);
+-		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
++		riscv_l1_flush_on_all_cpu(start);
+ 
+ 		if (l2c_base) {
+ 			pa = virt_to_phys(start);
+@@ -141,10 +164,10 @@ void cpu_dma_wb_range(unsigned long start, unsigned long end)
+ 	unsigned long flags;
+ 	unsigned long line_size = get_cache_line_size();
+ 
+-	local_irq_save(flags);
++	//local_irq_save(flags);
+ 	start = start & (~(line_size - 1));
+ 	cpu_dcache_wb_range(start, end, line_size);
+-	local_irq_restore(flags);
++	//local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL(cpu_dma_wb_range);
+ 
+@@ -229,8 +252,7 @@ void k510_sharemem_dcache_wb_range(unsigned long va_start, unsigned long pa_star
+ 	}
+ #else
+ 	while (va_end > va_start) {
+-		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, va_start);
+-		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
++		riscv_l1_flush_on_all_cpu(va_start);
+ 
+ 		if (l2c_base) {
+ 			writel(pa_start, (void*)(l2c_base + L2C_REG_CN_ACC_OFFSET(mhartid)));
+@@ -252,7 +274,7 @@ void k510_sharemem_wb_range(unsigned long va_start, unsigned long pa_start, unsi
+ 	unsigned long line_size = get_cache_line_size();
+ 	unsigned long va_end = va_start + size;
+ 
+-	local_irq_save(flags);
++	//local_irq_save(flags);
+ 	__asm__ __volatile__(
+         "li t6, 0x00040000\t\n"
+         "csrs sstatus, t6\t\n"
+@@ -264,7 +286,7 @@ void k510_sharemem_wb_range(unsigned long va_start, unsigned long pa_start, unsi
+         "li t6, 0x00040000\t\n"
+         "csrc sstatus, t6\t\n"
+     );
+-	local_irq_restore(flags);
++	//local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL(k510_sharemem_wb_range);
+ 
+diff --git a/drivers/net/ethernet/cadence/macb_main.c b/drivers/net/ethernet/cadence/macb_main.c
+index 7e44a85a..4c569045 100755
+--- a/drivers/net/ethernet/cadence/macb_main.c
++++ b/drivers/net/ethernet/cadence/macb_main.c
+@@ -1738,14 +1738,15 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		dev_kfree_skb_any(skb);
+ 		goto unlock;
+ 	}
+-
++	
++	spin_unlock_irqrestore(&bp->lock, flags);
+ 	/* Map socket buffer for DMA transfer */
+ 	if (!macb_tx_map(bp, queue, skb, hdrlen)) {
+ 		dev_kfree_skb_any(skb);
+ 		printk("=========macb_tx_map errorz\n");
+ 		goto unlock;
+ 	}
+-
++	spin_lock_irqsave(&bp->lock, flags);
+ 	/* Make newly initialized descriptor visible to hardware */
+ 	wmb();
+ 	skb_tx_timestamp(skb);
+-- 
+2.17.1
+
