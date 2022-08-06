@@ -76,9 +76,14 @@ int main(void)
         {
             if(data_reg != *(uint8_t *)(addr + i))
             {
+            				
+            	printf("error \n\n");
 				printf("}");
                 printf("count =%ld size=%ld, cpu=%d i=%d data_reg=0x%x 0x%x 0x%x 0x%x\n", count, size, cpu, i, data_reg, *(uint8_t *)(addr + i), *(uint8_t *)(addr + i + 3), *(uint8_t *)(addr + i + 32), *(uint8_t *)(addr + i + 64));
 				dump_buff("dsp moniter error :", addr-66,size+66);
+
+				dsp_debug[6]= i;	
+				
                 break;
             }
         }
