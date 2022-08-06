@@ -67,6 +67,8 @@ riscv64-linux-cpp -nostdinc -I ${KERNEL_BUILD_DIR}/include -I ${KERNEL_BUILD_DIR
 ${KERNEL_BUILD_DIR}/scripts/dtc/dtc -I dts -o ${BINARIES_DIR}/k510.dtb ${BINARIES_DIR}/k510_crb_lp3_v1_2.dts.tmp
 ${KERNEL_BUILD_DIR}/scripts/dtc/dtc -I dts -o ${BINARIES_DIR}/k510-hdmi.dtb ${BINARIES_DIR}/k510_crb_lp3_hdmi_v1_2.dts.tmp
 
+${KERNEL_BUILD_DIR}/scripts/dtc/dtc -I dts -o ${BINARIES_DIR}/k.dtb ${KERNEL_BUILD_DIR}/arch/riscv/boot/dts/canaan/k.dts
+
 rm -rf  ${BINARIES_DIR}/k510_crb_lp3_v1_2.dts.tmp
 rm -rf  ${BINARIES_DIR}/k510_crb_lp3_hdmi_v1_2.dts.tmp
 

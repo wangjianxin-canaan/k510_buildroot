@@ -1,0 +1,49 @@
+From 8472f4b9356c7374e903155d70469a12e908a075 Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Sat, 6 Aug 2022 18:24:32 +0800
+Subject: [PATCH] printf modify
+
+---
+ drivers/net/ethernet/cadence/macb_main.c | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/cadence/macb_main.c b/drivers/net/ethernet/cadence/macb_main.c
+index ce37d596..8ea5d9c8 100755
+--- a/drivers/net/ethernet/cadence/macb_main.c
++++ b/drivers/net/ethernet/cadence/macb_main.c
+@@ -1497,6 +1497,7 @@ static unsigned int macb_tx_map(struct macb *bp,
+ 		mapping = dma_map_single(&bp->pdev->dev,
+ 					 skb->data + offset,
+ 					 size, DMA_TO_DEVICE);
++		
+ 		//printk("mapping=0x%llx cpu=%d\n", mapping, smp_processor_id());
+ 		if (dma_mapping_error(&bp->pdev->dev, mapping))
+ 			goto dma_error;
+@@ -1512,7 +1513,23 @@ static unsigned int macb_tx_map(struct macb *bp,
+ 			dsp_debug[5] = smp_processor_id();
+ 
+ 			while(dsp_debug[2])
+-				;
++			{
++				if(dsp_debug[6])
++				{
++					//wjx_xxxxxxx();
++					
++					printk("\r\n error dsp_debug[6] %lx value %02x %02x \n", 
++												dsp_debug[6],  * (char*) (skb->data + offset  +66  + dsp_debug[6]) );
++					
++					printk(" skb->data + offset =%lx , mapping=%lx \n", skb->data + offset ,  mapping);
++					print_hex_dump(KERN_INFO, "skb", DUMP_PREFIX_OFFSET,32,1, skb->data + offset, size,0);
++					//iounmap(ptmpadd);
++					
++					dsp_debug[6] = 0;
++					
++				}
++			}
++				
+ 
+ 		}
+ 		/* Save info to properly release resources */
+-- 
+2.17.1
+
