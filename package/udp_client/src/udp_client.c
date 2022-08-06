@@ -44,19 +44,23 @@ int main(int argc, char* argv[])
 	char sBuffer[MAX_BUFFER_SIZE] = {0};
 	static int ncount = 0;
 	int nRet = 0;
-	for(int i =0;i < 1000;i++)
+	for (int j = 0; ; ++j)
 	{
-		memset(sBuffer,(i%100)&0xfe,MAX_BUFFER_SIZE);
-		nRet = sendto(sock, sBuffer, MAX_BUFFER_SIZE, 0, (struct sockaddr *) &addr, sizeof(addr));
-		if (nRet < 0)
+		for(int i =0;i < 1000;i++)
 		{
-			printf("sendto error.  nRet %x errno %x : %s\n", nRet, errno, strerror(errno));
-			close(sock);
-			return -1;
+			memset(sBuffer,(i%100)&0xfe,MAX_BUFFER_SIZE);
+			nRet = sendto(sock, sBuffer, MAX_BUFFER_SIZE, 0, (struct sockaddr *) &addr, sizeof(addr));
+			if (nRet < 0)
+			{
+				printf("sendto error.  nRet %x errno %x : %s\n", nRet, errno, strerror(errno));
+				close(sock);
+				return -1;
+			}
+			usleep(1);
 		}
-		usleep(1);
+		printf("\nprocess end j=%d  pid %d \n",j,getpid());
 	}
-	printf("\nprocess end \n");
+	
 
     return 0;
 }
