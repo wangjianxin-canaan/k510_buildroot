@@ -1,0 +1,3874 @@
+From 87f4dc7c99ddc03288dcf5b67dd33530018412ac Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Sat, 6 Aug 2022 23:36:00 +0800
+Subject: [PATCH] linux config file
+
+---
+ arch/riscv/boot/dts/canaan/k.dts  | 3741 +++++++++++++++++++++++++++++
+ arch/riscv/configs/k510_defconfig |   55 +-
+ 2 files changed, 3747 insertions(+), 49 deletions(-)
+ create mode 100644 arch/riscv/boot/dts/canaan/k.dts
+
+diff --git a/arch/riscv/boot/dts/canaan/k.dts b/arch/riscv/boot/dts/canaan/k.dts
+new file mode 100644
+index 00000000..8f008f0d
+--- /dev/null
++++ b/arch/riscv/boot/dts/canaan/k.dts
+@@ -0,0 +1,3741 @@
++/dts-v1/;
++
++/ {
++	#address-cells = <0x02>;
++	#size-cells = <0x02>;
++	compatible = "canaan-creative,k510";
++	model = "canaan-creative,k510";
++
++	aliases {
++		uart0 = "/noc_bus@99900000/apb_bus/peri_apb/serial@96000000";
++	};
++
++	chosen {
++		bootargs = "console=ttyS0,115200n8 debug loglevel=7";
++		stdout-path = "uart0:115200n8";
++	};
++
++	cpus {
++		status = "okay";
++		#address-cells = <0x01>;
++		#size-cells = <0x00>;
++		timebase-frequency = <0x1312d0>;
++
++		cpu@0 {
++			status = "okay";
++			compatible = "riscv";
++			device_type = "cpu";
++			reg = <0x00>;
++			riscv,isa = "rv64i2p0m2p0a2p0f2p0d2p0c2p0xv5-0p0";
++			riscv,priv-major = <0x01>;
++			riscv,priv-minor = <0x0a>;
++			mmu-type = "riscv,sv39";
++			clock-frequency = <0x2f34f600>;
++			i-cache-size = <0x8000>;
++			i-cache-line-size = <0x20>;
++			d-cache-size = <0x8000>;
++			d-cache-line-size = <0x20>;
++			next-level-cache = <0x01>;
++
++			interrupt-controller {
++				status = "okay";
++				compatible = "riscv,cpu-intc";
++				#interrupt-cells = <0x01>;
++				interrupt-controller;
++				phandle = <0x02>;
++			};
++		};
++
++		cpu@1 {
++			status = "okay";
++			compatible = "riscv";
++			device_type = "cpu";
++			reg = <0x01>;
++			riscv,isa = "rv64i2p0m2p0a2p0f2p0d2p0c2p0xv5-0p0";
++			riscv,priv-major = <0x01>;
++			riscv,priv-minor = <0x0a>;
++			mmu-type = "riscv,sv39";
++			clock-frequency = <0x2f34f600>;
++			i-cache-size = <0x8000>;
++			i-cache-line-size = <0x20>;
++			d-cache-size = <0x8000>;
++			d-cache-line-size = <0x20>;
++			next-level-cache = <0x01>;
++
++			interrupt-controller {
++				status = "okay";
++				compatible = "riscv,cpu-intc";
++				#interrupt-cells = <0x01>;
++				interrupt-controller;
++				phandle = <0x03>;
++			};
++		};
++	};
++
++	l2-cache@9E900000 {
++		status = "okay";
++		compatible = "cache";
++		cache-level = <0x02>;
++		cache-size = <0x40000>;
++		reg = <0x00 0x9e900000 0x00 0x40000>;
++		andes,inst-prefetch = <0x03>;
++		andes,data-prefetch = <0x03>;
++		andes,tag-ram-ctl = <0x00 0x00>;
++		andes,data-ram-ctl = <0x00 0x00>;
++		phandle = <0x01>;
++	};
++
++	pmu {
++		status = "okay";
++		compatible = "riscv,andes-pmu";
++		device_type = "pmu";
++	};
++
++	memory@0 {
++		status = "okay";
++		device_type = "memory";
++		reg = <0x00 0x00 0x00 0xf000000>;
++	};
++
++	sharem@f000000 {
++		compatible = "k510-share-memory";
++		reg = <0x00 0xf000000 0x00 0x10000000>;
++	};
++
++	soc {
++		status = "okay";
++		compatible = "canaan,k510-soc";
++		#address-cells = <0x02>;
++		#size-cells = <0x02>;
++		ranges;
++
++		interrupt-controller@9EC00000 {
++			status = "okay";
++			compatible = "riscv,plic0";
++			#address-cells = <0x02>;
++			#interrupt-cells = <0x02>;
++			interrupt-controller;
++			reg = <0x00 0x9ec00000 0x00 0x4000000>;
++			riscv,ndev = <0x8c>;
++			interrupts-extended = <0x02 0x0b 0x02 0x09 0x03 0x0b 0x03 0x09>;
++			phandle = <0x06>;
++		};
++
++		interrupt-controller@9E400000 {
++			status = "okay";
++			compatible = "riscv,plic1";
++			#address-cells = <0x02>;
++			#interrupt-cells = <0x02>;
++			interrupt-controller;
++			reg = <0x00 0x9e400000 0x00 0x400000>;
++			riscv,ndev = <0x02>;
++			interrupts-extended = <0x02 0x03 0x03 0x03>;
++		};
++
++		plmt0@9E000000 {
++			status = "okay";
++			compatible = "riscv,plmt0";
++			interrupts-extended = <0x02 0x07 0x03 0x07>;
++			reg = <0x00 0x9e000000 0x00 0x100000>;
++		};
++	};
++
++	noc_bus@99900000 {
++		status = "okay";
++		compatible = "simple-bus";
++		reg = <0x00 0x99900000 0x00 0x40000>;
++		#address-cells = <0x02>;
++		#size-cells = <0x02>;
++		ranges;
++
++		axi_bus {
++			status = "okay";
++			compatible = "simple-bus";
++			#address-cells = <0x02>;
++			#size-cells = <0x02>;
++			ranges;
++
++			sram0@80000000 {
++				status = "okay";
++				compatible = "canaan,k510-sram0";
++				reg = <0x00 0x80000000 0x00 0x100000>;
++				resets = <0x04 0x104 0x01 0x1f 0x00>;
++				reset-names = "sram0_rst";
++				power-domains = <0x05 0x08>;
++			};
++
++			sram1@80100000 {
++				status = "okay";
++				compatible = "canaan,k510-sram1";
++				reg = <0x00 0x80100000 0x00 0x80000>;
++				resets = <0x04 0x114 0x01 0x1f 0x00>;
++				reset-names = "sram0_rst";
++				power-domains = <0x05 0x09>;
++			};
++
++			gnne@94000000 {
++				status = "disabled";
++				compatible = "k510-gnne";
++				reg = <0x00 0x94180000 0x00 0x80000>;
++				interrupt-parent = <0x06>;
++				interrupts = <0x27 0x04>;
++				resets = <0x04 0x2c 0x01 0x1f 0x00>;
++				reset-names = "gnne_rst";
++				power-domains = <0x05 0x03>;
++			};
++
++			dsp@99800000 {
++				status = "okay";
++				compatible = "k510-dsp";
++				reg = <0x00 0x99800000 0x00 0x80000>;
++				resets = <0x04 0x14 0x00 0x1e 0x00>;
++				reset-names = "dsp_rst";
++				power-domains = <0x05 0x01>;
++				sysctl-phy-addr = <0x97000000>;
++			};
++		};
++
++		ahb_bus {
++			status = "okay";
++			compatible = "simple-bus";
++			#address-cells = <0x02>;
++			#size-cells = <0x02>;
++			ranges;
++
++			mctl@98000000 {
++				status = "okay";
++				compatible = "cadence,ddr-controller";
++				reg = <0x00 0x98000000 0x00 0x10000>;
++				#address-cells = <0x02>;
++				#size-cells = <0x02>;
++				resets = <0x04 0xf4 0x01 0x1f 0x00>;
++				reset-names = "mctl_rst";
++				power-domains = <0x05 0x07>;
++			};
++
++			security {
++				status = "okay";
++				compatible = "simple-bus";
++				#address-cells = <0x02>;
++				#size-cells = <0x02>;
++				ranges;
++
++				aes@91000000 {
++					status = "okay";
++					compatible = "canaan,k510-aes";
++					reg = <0x00 0x91000000 0x00 0x10000>;
++					clocks = <0x07>;
++					resets = <0x04 0x9c 0x01 0x1f 0x00>;
++					reset-names = "aes_rst";
++					power-domains = <0x05 0x04>;
++					dmas = <0x08 0x01 0xfff 0x00 0x21 0x08 0x01 0xfff 0x00 0x22>;
++					dma-names = "tx\0rx";
++				};
++
++				sha@91010000 {
++					status = "okay";
++					compatible = "canaan,k510-sha";
++					reg = <0x00 0x91010000 0x00 0x10000>;
++					clocks = <0x09>;
++					resets = <0x04 0x94 0x01 0x1f 0x00>;
++					reset-names = "sha_rst";
++					power-domains = <0x05 0x04>;
++					dmas = <0x08 0x01 0xfff 0x00 0x20>;
++					dma-names = "tx";
++				};
++
++				otp@91020000 {
++					status = "okay";
++					compatible = "canaan,k510-otp";
++					reg = <0x00 0x91020000 0x00 0xc000>;
++					#address-cells = <0x01>;
++					#size-cells = <0x01>;
++					resets = <0x04 0xb4 0x01 0x1f 0x00>;
++					reset-names = "otp_rst";
++					power-domains = <0x05 0x04>;
++				};
++
++				trng@9102c200 {
++					status = "disabled";
++					compatible = "canaan,k510-rng";
++					reg = <0x00 0x9102c200 0x00 0x100>;
++					power-domains = <0x05 0x04>;
++				};
++
++				rom@91040000 {
++					status = "okay";
++					compatible = "canaan,k510-rom";
++					reg = <0x00 0x91040000 0x00 0x20000>;
++					resets = <0x04 0xac 0x01 0x1f 0x00>;
++					reset-names = "rom_rst";
++					power-domains = <0x05 0x04>;
++				};
++			};
++
++			storage_ahb {
++				status = "disabled";
++				compatible = "simple-bus";
++				#address-cells = <0x02>;
++				#size-cells = <0x02>;
++				ranges;
++
++				sdios@92400000 {
++					status = "disabled";
++					compatible = "canaan, arasan-sdio-slave";
++					reg = <0x00 0x92400000 0x00 0x20000>;
++					resets = <0x04 0xec 0x01 0x1f 0x00>;
++					reset-names = "sdios_rst";
++					power-domains = <0x05 0x05>;
++				};
++			};
++
++			peri_ahb {
++				status = "disabled";
++				compatible = "simple-bus";
++				#address-cells = <0x02>;
++				#size-cells = <0x02>;
++				ranges;
++
++				spi@96080000 {
++					status = "disabled";
++					compatible = "snps,dwc-ssi-1.01a";
++					reg = <0x00 0x96080000 0x00 0x1000>;
++					num-cs = <0x04>;
++					reg-io-width = <0x04>;
++					#address-cells = <0x02>;
++					#size-cells = <0x02>;
++					ranges;
++					interrupt-parent = <0x06>;
++					interrupts = <0x06 0x04>;
++					clocks = <0x0a 0x0b>;
++					clock-names = "spi_hclk\0spi_sclk";
++					clock-frequency = <0xee6b280>;
++					resets = <0x04 0x74 0x01 0x1f 0x00>;
++					reset-names = "spi0_rst";
++					power-domains = <0x05 0x06>;
++					pinctrl-names = "default";
++					pinctrl-0 = <0x0c>;
++
++					spi-nand@0 {
++						#address-cells = <0x01>;
++						#size-cells = <0x01>;
++						compatible = "spi-nand";
++						spi-max-frequency = <0x5b8d80>;
++						spi-tx-bus-width = <0x04>;
++						spi-rx-bus-width = <0x04>;
++						reg = <0x00 0x00 0x00 0x00>;
++
++						partition@0 {
++							label = "uboot-1";
++							reg = <0x00 0x100000>;
++						};
++
++						partition@100000 {
++							label = "uboot-2";
++							reg = <0x100000 0x100000>;
++						};
++
++						partition@200000 {
++							label = "uboot-3";
++							reg = <0x200000 0x100000>;
++						};
++
++						partition@300000 {
++							label = "env";
++							reg = <0x300000 0x40000>;
++						};
++
++						partition@340000 {
++							label = "dtb";
++							reg = <0x340000 0x40000>;
++						};
++
++						partition@380000 {
++							label = "kernel";
++							reg = <0x380000 0xf00000>;
++						};
++
++						partition@1280000 {
++							label = "rootfs";
++							reg = <0x1280000 0x6d00000>;
++						};
++					};
++				};
++
++				spi@96090000 {
++					status = "disabled";
++					compatible = "snps,dwc-ssi-1.01a";
++					reg = <0x00 0x96090000 0x00 0x1000>;
++					num-cs = <0x01>;
++					reg-io-width = <0x04>;
++					#address-cells = <0x02>;
++					#size-cells = <0x02>;
++					ranges;
++					interrupt-parent = <0x06>;
++					interrupts = <0x07 0x04>;
++					clocks = <0x0d 0x0e>;
++					clock-names = "spi_hclk\0spi_sclk";
++					clock-frequency = <0x2faf080>;
++					resets = <0x04 0x78 0x01 0x1f 0x00>;
++					reset-names = "spi1_rst";
++					power-domains = <0x05 0x06>;
++					dmas = <0x08 0x01 0xfff 0x00 0x08 0x08 0x01 0xfff 0x00 0x09>;
++					dma-names = "tx\0rx";
++					pinctrl-names = "default";
++					pinctrl-0 = <0x0f>;
++
++					spidev@0 {
++						compatible = "spidev";
++						reg = <0x00 0x00 0x00 0x00>;
++						spi-max-frequency = <0x2faf080>;
++					};
++				};
++
++				spi@960a0000 {
++					status = "disabled";
++					compatible = "snps,dwc-ssi-1.01a";
++					reg = <0x00 0x960a0000 0x00 0x1000>;
++					num-cs = <0x01>;
++					reg-io-width = <0x04>;
++					#address-cells = <0x01>;
++					#size-cells = <0x00>;
++					ranges = <0x00 0x00 0x960a0000>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x08 0x04>;
++					clocks = <0x10 0x11>;
++					clock-names = "spi_hclk\0spi_sclk";
++					clock-frequency = <0x2faf080>;
++					resets = <0x04 0x7c 0x01 0x1f 0x00>;
++					reset-names = "spi2_rst";
++					power-domains = <0x05 0x06>;
++					dmas = <0x08 0x01 0xfff 0x00 0x0a 0x08 0x01 0xfff 0x00 0x0b>;
++					dma-names = "tx\0rx";
++					pinctrl-names = "default";
++					pinctrl-0 = <0x12>;
++
++					ws2812b@0 {
++						compatible = "ws2812b";
++						reg = <0x00>;
++						spi-max-frequency = <0x2faf080>;
++					};
++				};
++
++				spi@960b0000 {
++					status = "disabled";
++					compatible = "snps,dwc-ssi-1.01a";
++					reg = <0x00 0x960b0000 0x00 0x1000>;
++					num-cs = <0x01>;
++					reg-io-width = <0x04>;
++					#address-cells = <0x02>;
++					#size-cells = <0x02>;
++					ranges;
++					interrupt-parent = <0x06>;
++					interrupts = <0x09 0x04>;
++					resets = <0x04 0x80 0x01 0x1f 0x00>;
++					reset-names = "spis_rst";
++					power-domains = <0x05 0x06>;
++				};
++			};
++
++			usb@93060000 {
++				status = "disabled";
++				compatible = "Cadence,usb-dev1.00";
++				reg = <0x00 0x93060000 0x00 0x10000>;
++				interrupt-parent = <0x06>;
++				interrupts = <0x2d 0x04 0x2e 0x04>;
++				resets = <0x04 0x18c 0x01 0x1f 0x00>;
++				reset-names = "usb_rst";
++				power-domains = <0x05 0x0c>;
++				otg_power_supply-gpios = <0x13 0x10 0x00>;
++			};
++		};
++
++		apb_bus {
++			status = "okay";
++			compatible = "simple-bus";
++			#address-cells = <0x02>;
++			#size-cells = <0x02>;
++			ranges;
++
++			storage_apb {
++				status = "okay";
++				compatible = "simple-bus";
++				#address-cells = <0x02>;
++				#size-cells = <0x02>;
++				ranges;
++
++				sdio@93000000 {
++					status = "disabled";
++					compatible = "socionext,uniphier-sd4hc\0cdns,sd4hc";
++					reg = <0x00 0x93000000 0x00 0x2000>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x30 0x04>;
++					clocks = <0x14>;
++					max-frequency = <0x2faf080>;
++					resets = <0x04 0xc8 0x01 0x1f 0x00>;
++					reset-names = "sdio0_rst";
++					power-domains = <0x05 0x05>;
++					bus-width = <0x08>;
++					pinctrl-names = "default";
++					pinctrl-0 = <0x15>;
++				};
++
++				sdio@93010000 {
++					status = "disabled";
++					compatible = "socionext,uniphier-sd4hc\0cdns,sd4hc";
++					reg = <0x00 0x93010000 0x00 0x2000>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x31 0x04>;
++					clocks = <0x16>;
++					max-frequency = <0x2faf080>;
++					resets = <0x04 0xcc 0x01 0x1f 0x00>;
++					reset-names = "sdio1_rst";
++					power-domains = <0x05 0x05>;
++					pinctrl-names = "default";
++					pinctrl-0 = <0x17>;
++					mmc-pwrseq = <0x18>;
++					bus-width = <0x04>;
++					#address-cells = <0x01>;
++					#size-cells = <0x00>;
++					keep-power-in-suspend;
++					non-removable;
++
++					wifi@1 {
++						reg = <0x01>;
++						compatible = "brcm,bcm4329-fmac";
++						brcm,drive-strength = <0x0a>;
++					};
++				};
++
++				sdio@93020000 {
++					status = "disabled";
++					compatible = "socionext,uniphier-sd4hc\0cdns,sd4hc";
++					reg = <0x00 0x93020000 0x00 0x2000>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x32 0x04>;
++					clocks = <0x19>;
++					max-frequency = <0x2faf080>;
++					resets = <0x04 0xd0 0x01 0x1f 0x00>;
++					reset-names = "sdio2_rst";
++					power-domains = <0x05 0x05>;
++					bus-width = <0x04>;
++					cap-sd-highspeed;
++					cdns,phy-input-delay-legacy = <0x0f>;
++					cdns,phy-input-delay-sd-highspeed = <0x0f>;
++					pinctrl-names = "default";
++					pinctrl-0 = <0x1a>;
++				};
++
++				emac@93030000 {
++					status = "okay";
++					compatible = "cdns,k510-gem";
++					reg = <0x00 0x93030000 0x00 0x10000>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x36 0x04 0x37 0x04 0x38 0x04>;
++					clocks = <0x1b 0x1b 0x1b 0x1b 0x1b 0x1b>;
++					clock-names = "hclk\0pclk\0ether_clk\0tx_clk\0rx_clk\0tsu_clk";
++					clock-config = <0x97001104>;
++					resets = <0x04 0xe4 0x01 0x1f 0x00>;
++					reset-names = "emac_rst";
++					power-domains = <0x05 0x05>;
++					phy-mode = "rgmii";
++					pinctrl-names = "default";
++					pinctrl-0 = <0x1c>;
++						fixed-link {
++							speed = <1000>;
++							full-duplex;
++						};
++				};
++                
++
++				pdma@93040000 {
++					status = "okay";
++					compatible = "canaan,k510-pdma";
++					reg = <0x00 0x93040000 0x00 0x400>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x1f 0x04>;
++					clocks = <0x1d>;
++					resets = <0x04 0xd8 0x01 0x1f 0x00>;
++					reset-names = "pdma_rst";
++					power-domains = <0x05 0x05>;
++					#dma-cells = <0x04>;
++					dma-channels = <0x10>;
++					dma-requests = <0x23>;
++					phandle = <0x08>;
++				};
++
++				sdma@93050000 {
++					status = "okay";
++					compatible = "canaan,k510-sdma";
++					reg = <0x00 0x93050000 0x00 0x2000>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x1e 0x04>;
++					clocks = <0x1e>;
++					resets = <0x04 0xdc 0x01 0x1f 0x00>;
++					reset-names = "sdma_rst";
++					power-domains = <0x05 0x05>;
++					dma-channels = <0x04>;
++				};
++			};
++
++			peri_apb {
++				status = "okay";
++				compatible = "simple-bus";
++				#address-cells = <0x02>;
++				#size-cells = <0x02>;
++				ranges;
++
++				serial@96000000 {
++					status = "okay";
++					#address-cells = <0x02>;
++					#size-cells = <0x02>;
++					compatible = "snps,dw-apb-uart";
++					reg = <0x00 0x96000000 0x00 0x100>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x01 0x04>;
++					resets = <0x04 0x58 0x01 0x1f 0x00>;
++					reset-names = "uart0_rst";
++					power-domains = <0x05 0x06>;
++					clock-frequency = <0x17d7840>;
++					reg-shift = <0x02>;
++					reg-io-width = <0x04>;
++					no-loopback-test = <0x01>;
++					pinctrl-names = "default";
++					pinctrl-0 = <0x1f>;
++				};
++
++				serial@96010000 {
++					status = "okay";
++					#address-cells = <0x02>;
++					#size-cells = <0x02>;
++					compatible = "snps,dw-apb-uart";
++					reg = <0x00 0x96010000 0x00 0x1000>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x02 0x04>;
++					resets = <0x04 0x5c 0x01 0x1f 0x00>;
++					reset-names = "uart1_rst";
++					power-domains = <0x05 0x06>;
++					clock-frequency = <0x17d7840>;
++					reg-shift = <0x02>;
++					reg-io-width = <0x04>;
++					no-loopback-test = <0x01>;
++					pinctrl-names = "default";
++					pinctrl-0 = <0x20>;
++				};
++
++				serial@96020000 {
++					status = "disabled";
++					compatible = "snps,dw-apb-uart";
++					reg = <0x00 0x96020000 0x00 0x100>;
++					resets = <0x04 0x60 0x01 0x1f 0x00>;
++					reset-names = "uart2_rst";
++					power-domains = <0x05 0x06>;
++				};
++
++				serial@96030000 {
++					status = "disabled";
++					compatible = "snps,dw-apb-uart";
++					reg = <0x00 0x96030000 0x00 0x100>;
++					resets = <0x04 0x64 0x01 0x1f 0x00>;
++					reset-names = "uart3_rst";
++					power-domains = <0x05 0x06>;
++				};
++
++				i2ss@96050000 {
++					status = "disabled";
++					compatible = "snps,dw-apb-i2s";
++					reg = <0x00 0x96050000 0x00 0x100>;
++					resets = <0x04 0x6c 0x01 0x1f 0x00>;
++					reset-names = "i2ss_rst";
++					power-domains = <0x05 0x06>;
++				};
++
++				i2s@96060000 {
++					status = "disabled";
++					compatible = "snps,designware-i2s";
++					reg = <0x00 0x96060000 0x00 0x400>;
++					clocks = <0x21>;
++					clock-names = "i2sclk";
++					resets = <0x04 0x88 0x01 0x1f 0x00>;
++					reset-names = "i2s_rst";
++					dmas = <0x08 0x01 0xfff 0x00 0x1b 0x08 0x01 0xfff 0x00 0x1c>;
++					dma-names = "tx\0rx";
++					pinctrl-names = "default";
++					pinctrl-0 = <0x22>;
++					phandle = <0x80>;
++				};
++
++				audio@96060400 {
++					status = "disabled";
++					compatible = "canaan,k510-audio";
++					reg = <0x00 0x96060400 0x00 0xc00>;
++					resets = <0x04 0x88 0x01 0x1f 0x00>;
++					reset-names = "audio_rst";
++					power-domains = <0x05 0x06>;
++				};
++			};
++
++			manage_subsys {
++				status = "okay";
++				compatible = "simple-bus";
++				#address-cells = <0x02>;
++				#size-cells = <0x02>;
++				ranges;
++
++				sysctl_boot@97000000 {
++					status = "okay";
++					compatible = "simple-bus";
++					reg = <0x00 0x97000000 0x00 0x1000>;
++
++					osc25m {
++						#clock-cells = <0x00>;
++						compatible = "fixed-clock";
++						clock-frequency = <0x17d7840>;
++						clock-accuracy = <0x00>;
++						phandle = <0x23>;
++					};
++
++					osc32k {
++						#clock-cells = <0x00>;
++						compatible = "fixed-clock";
++						clock-frequency = <0x8000>;
++						clock-accuracy = <0x00>;
++						phandle = <0x2c>;
++					};
++
++					osc25m_gate {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-osc25m-gate";
++						clocks = <0x23>;
++						clk-gate-reg-offset = <0x48>;
++						clk-gate-reg-enable-bit = <0x00>;
++						clk-gate-reg-enable-bit-reverse = <0x01>;
++						phandle = <0x24>;
++					};
++
++					pll0 {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-pll";
++						clocks = <0x24>;
++						clk-divide-reg-offset = <0x00>;
++						clk-divide-out-reg-value-shift = <0x18>;
++						clk-divide-out-reg-value-mask = <0x0f>;
++						clk-divide-out-reg-write-enable-bit = <0x1e>;
++						clk-divide-ref-reg-value-shift = <0x10>;
++						clk-divide-ref-reg-value-mask = <0x3f>;
++						clk-divide-ref-reg-write-enable-bit = <0x1d>;
++						clk-divide-fb-reg-value-shift = <0x00>;
++						clk-divide-fb-reg-value-mask = <0xfff>;
++						clk-divide-fb-reg-write-enable-bit = <0x1c>;
++						clk-divide-bypass-reg-offset = <0x04>;
++						clk-divide-bypass-reg-enable-bit = <0x13>;
++						clk-divide-bypass-reg-write-enable-bit = <0x1c>;
++						clk-gate-reg-offset = <0x08>;
++						clk-gate-reg-enable-bit = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-lock-reg-offset = <0x0c>;
++						clk-lock-reg-status_bit = <0x00>;
++						phandle = <0x25>;
++					};
++
++					pll0_div2 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x25>;
++						clock-div = <0x02>;
++						clock-mult = <0x01>;
++						phandle = <0x2e>;
++					};
++
++					pll0_div3 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x25>;
++						clock-div = <0x03>;
++						clock-mult = <0x01>;
++					};
++
++					pll0_div4 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x25>;
++						clock-div = <0x04>;
++						clock-mult = <0x01>;
++						phandle = <0x42>;
++					};
++
++					pll1 {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-pll";
++						clocks = <0x24>;
++						clk-divide-reg-offset = <0x10>;
++						clk-divide-out-reg-value-shift = <0x18>;
++						clk-divide-out-reg-value-mask = <0x0f>;
++						clk-divide-out-reg-write-enable-bit = <0x1e>;
++						clk-divide-ref-reg-value-shift = <0x10>;
++						clk-divide-ref-reg-value-mask = <0x3f>;
++						clk-divide-ref-reg-write-enable-bit = <0x1d>;
++						clk-divide-fb-reg-value-shift = <0x00>;
++						clk-divide-fb-reg-value-mask = <0xfff>;
++						clk-divide-fb-reg-write-enable-bit = <0x1c>;
++						clk-divide-bypass-reg-offset = <0x14>;
++						clk-divide-bypass-reg-enable-bit = <0x13>;
++						clk-divide-bypass-reg-write-enable-bit = <0x1c>;
++						clk-gate-reg-offset = <0x18>;
++						clk-gate-reg-enable-bit = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-lock-reg-offset = <0x1c>;
++						clk-lock-reg-status_bit = <0x00>;
++						phandle = <0x26>;
++					};
++
++					pll1_div2 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x26>;
++						clock-div = <0x02>;
++						clock-mult = <0x01>;
++						phandle = <0x2f>;
++					};
++
++					pll1_div3 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x26>;
++						clock-div = <0x03>;
++						clock-mult = <0x01>;
++						phandle = <0x3e>;
++					};
++
++					pll1_div4 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x26>;
++						clock-div = <0x04>;
++						clock-mult = <0x01>;
++						phandle = <0x35>;
++					};
++
++					pll2 {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-pll";
++						clocks = <0x24>;
++						clk-divide-reg-offset = <0x20>;
++						clk-divide-out-reg-value-shift = <0x18>;
++						clk-divide-out-reg-value-mask = <0x0f>;
++						clk-divide-out-reg-write-enable-bit = <0x1e>;
++						clk-divide-ref-reg-value-shift = <0x10>;
++						clk-divide-ref-reg-value-mask = <0x3f>;
++						clk-divide-ref-reg-write-enable-bit = <0x1d>;
++						clk-divide-fb-reg-value-shift = <0x00>;
++						clk-divide-fb-reg-value-mask = <0xfff>;
++						clk-divide-fb-reg-write-enable-bit = <0x1c>;
++						clk-divide-bypass-reg-offset = <0x24>;
++						clk-divide-bypass-reg-enable-bit = <0x13>;
++						clk-divide-bypass-reg-write-enable-bit = <0x1c>;
++						clk-gate-reg-offset = <0x28>;
++						clk-gate-reg-enable-bit = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-lock-reg-offset = <0x2c>;
++						clk-lock-reg-status_bit = <0x00>;
++						phandle = <0x27>;
++					};
++
++					pll2_div2 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x27>;
++						clock-div = <0x02>;
++						clock-mult = <0x01>;
++						phandle = <0x2a>;
++					};
++
++					pll2_div3 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x27>;
++						clock-div = <0x03>;
++						clock-mult = <0x01>;
++						phandle = <0x29>;
++					};
++
++					pll2_div4 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x27>;
++						clock-div = <0x04>;
++						clock-mult = <0x01>;
++						phandle = <0x37>;
++					};
++
++					pll3 {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-pll";
++						clocks = <0x24>;
++						clk-divide-reg-offset = <0x30>;
++						clk-divide-out-reg-value-shift = <0x18>;
++						clk-divide-out-reg-value-mask = <0x0f>;
++						clk-divide-out-reg-write-enable-bit = <0x1e>;
++						clk-divide-ref-reg-value-shift = <0x10>;
++						clk-divide-ref-reg-value-mask = <0x3f>;
++						clk-divide-ref-reg-write-enable-bit = <0x1d>;
++						clk-divide-fb-reg-value-shift = <0x00>;
++						clk-divide-fb-reg-value-mask = <0xfff>;
++						clk-divide-fb-reg-write-enable-bit = <0x1c>;
++						clk-divide-bypass-reg-offset = <0x34>;
++						clk-divide-bypass-reg-enable-bit = <0x13>;
++						clk-divide-bypass-reg-write-enable-bit = <0x1c>;
++						clk-gate-reg-offset = <0x38>;
++						clk-gate-reg-enable-bit = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-lock-reg-offset = <0x3c>;
++						clk-lock-reg-status_bit = <0x00>;
++						phandle = <0x28>;
++					};
++
++					pll3_div2 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x28>;
++						clock-div = <0x02>;
++						clock-mult = <0x01>;
++						phandle = <0x41>;
++					};
++
++					pll3_div3 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x28>;
++						clock-div = <0x03>;
++						clock-mult = <0x01>;
++						phandle = <0x40>;
++					};
++
++					pll3_div4 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x28>;
++						clock-div = <0x04>;
++						clock-mult = <0x01>;
++					};
++
++					osc26m {
++						#clock-cells = <0x00>;
++						compatible = "fixed-clock";
++						clock-frequency = <0x18cba80>;
++						clock-accuracy = <0x00>;
++						phandle = <0x50>;
++					};
++				};
++
++				sysctl_clock@97001000 {
++					status = "okay";
++					compatible = "simple-bus";
++					reg = <0x00 0x97001000 0x00 0x1000>;
++
++					ax25mp_src {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x29 0x25 0x2a>;
++						clk-parent-reg-offset = <0x00>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x03>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x0c>;
++						clk-rate-conf-div-min = <0x0c>;
++						clk-rate-conf-div-max = <0x0c>;
++						clk-rate-calc-method = <0x00>;
++						clk-rate-reg-offset = <0x00>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x0f>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						phandle = <0x2b>;
++					};
++
++					ax25mp_core0 {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2b>;
++						clk-gate-reg-offset = <0x00>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					ax25mp_core1 {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2b>;
++						clk-gate-reg-offset = <0x00>;
++						clk-gate-reg-bit-enable = <0x09>;
++						clk-gate-reg-write-enable-bit = <0x1b>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					ax25mp_core0_dc {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2b>;
++						clk-gate-reg-offset = <0x00>;
++						clk-gate-reg-bit-enable = <0x0a>;
++						clk-gate-reg-write-enable-bit = <0x1c>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					ax25mp_core1_dc {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2b>;
++						clk-gate-reg-offset = <0x00>;
++						clk-gate-reg-bit-enable = <0x0b>;
++						clk-gate-reg-write-enable-bit = <0x1d>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					ax25mp_noc_mctl {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2b>;
++						clk-gate-reg-offset = <0x168>;
++						clk-gate-reg-bit-enable = <0x09>;
++						clk-gate-reg-write-enable-bit = <0x14>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					ax25m_mtimer {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2c 0x24>;
++						clk-parent-reg-offset = <0x04>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x20>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x04>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x02>;
++						clk-rate-reg-div-value-mask = <0x1f>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-offset = <0x04>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					ax25p_src {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x29 0x25>;
++						clk-parent-reg-offset = <0x10>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x06>;
++						clk-rate-conf-div-min = <0x06>;
++						clk-rate-conf-div-max = <0x06>;
++						clk-rate-calc-method = <0x00>;
++						clk-rate-reg-offset = <0x10>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x07>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						phandle = <0x2d>;
++					};
++
++					ax25p_core {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2d>;
++						clk-gate-reg-offset = <0x10>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					ax25p_lm {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2d>;
++						clk-gate-reg-offset = <0x10>;
++						clk-gate-reg-bit-enable = <0x09>;
++						clk-gate-reg-write-enable-bit = <0x1b>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					ax25p_mtimer {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2c 0x24>;
++						clk-parent-reg-offset = <0x14>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x20>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x14>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x02>;
++						clk-rate-reg-div-value-mask = <0x1f>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-offset = <0x14>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					gnne_sys {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2e 0x2f>;
++						clk-parent-reg-offset = <0x28>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x06>;
++						clk-rate-conf-div-min = <0x06>;
++						clk-rate-conf-div-max = <0x06>;
++						clk-rate-calc-method = <0x00>;
++						clk-rate-reg-offset = <0x28>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x07>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-offset = <0x28>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					gnne_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2e 0x2f>;
++						clk-parent-reg-offset = <0x20>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x06>;
++						clk-rate-conf-div-min = <0x06>;
++						clk-rate-conf-div-max = <0x06>;
++						clk-rate-calc-method = <0x00>;
++						clk-rate-reg-offset = <0x20>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x07>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						phandle = <0x30>;
++					};
++
++					gnne_axi_noc {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x30>;
++						clk-gate-reg-offset = <0x20>;
++						clk-gate-reg-bit-enable = <0x09>;
++						clk-gate-reg-write-enable-bit = <0x1b>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					gnne_axi_mctl {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x30>;
++						clk-gate-reg-offset = <0x168>;
++						clk-gate-reg-bit-enable = <0x0a>;
++						clk-gate-reg-write-enable-bit = <0x15>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					noc_clk0 {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2e 0x2f>;
++						clk-parent-reg-offset = <0x40>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x06>;
++						clk-rate-conf-div-min = <0x06>;
++						clk-rate-conf-div-max = <0x06>;
++						clk-rate-calc-method = <0x00>;
++						clk-rate-reg-offset = <0x40>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x07>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						phandle = <0x31>;
++					};
++
++					noc_clk0_div2 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x31>;
++						clock-div = <0x02>;
++						clock-mult = <0x01>;
++						phandle = <0x32>;
++					};
++
++					noc_clk0_div3 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x31>;
++						clock-div = <0x03>;
++						clock-mult = <0x01>;
++						phandle = <0x33>;
++					};
++
++					noc_clk0_div4 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x31>;
++						clock-div = <0x04>;
++						clock-mult = <0x01>;
++						phandle = <0x34>;
++					};
++
++					peri_dma_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x31>;
++						clk-gate-reg-offset = <0x100>;
++						clk-gate-reg-bit-enable = <0x04>;
++						clk-gate-reg-write-enable-bit = <0x14>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					sys_dma_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x31>;
++						clk-gate-reg-offset = <0x100>;
++						clk-gate-reg-bit-enable = <0x05>;
++						clk-gate-reg-write-enable-bit = <0x15>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					sram0_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x31>;
++						clk-gate-reg-offset = <0xa0>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					sram1_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x31>;
++						clk-gate-reg-offset = <0xa0>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					noc0_axi_p3 {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x31>;
++						clk-gate-reg-offset = <0x168>;
++						clk-gate-reg-bit-enable = <0x0c>;
++						clk-gate-reg-write-enable-bit = <0x17>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					noc0_mctl_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x32>;
++						clk-gate-reg-offset = <0x168>;
++						clk-gate-reg-bit-enable = <0x0d>;
++						clk-gate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					usb_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x32>;
++						clk-gate-reg-offset = <0x154>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					sd_slv_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x32>;
++						clk-gate-reg-offset = <0x100>;
++						clk-gate-reg-bit-enable = <0x07>;
++						clk-gate-reg-write-enable-bit = <0x17>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					sd_0_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x33>;
++						clk-gate-reg-offset = <0x100>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					sd_1_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x33>;
++						clk-gate-reg-offset = <0x100>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					sd_2_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x33>;
++						clk-gate-reg-offset = <0x100>;
++						clk-gate-reg-bit-enable = <0x02>;
++						clk-gate-reg-write-enable-bit = <0x12>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					emac_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x33>;
++						clk-gate-reg-offset = <0x100>;
++						clk-gate-reg-bit-enable = <0x03>;
++						clk-gate-reg-write-enable-bit = <0x13>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					peridma_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x33>;
++						clk-gate-reg-offset = <0x100>;
++						clk-gate-reg-bit-enable = <0x04>;
++						clk-gate-reg-write-enable-bit = <0x14>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x1d>;
++					};
++
++					sysdma_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x33>;
++						clk-gate-reg-offset = <0x100>;
++						clk-gate-reg-bit-enable = <0x05>;
++						clk-gate-reg-write-enable-bit = <0x15>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x1e>;
++					};
++
++					wdt_0_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x03>;
++						clk-gate-reg-write-enable-bit = <0x13>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					wdt_1_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x04>;
++						clk-gate-reg-write-enable-bit = <0x14>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					wdt_2_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x05>;
++						clk-gate-reg-write-enable-bit = <0x15>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					timer_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x06>;
++						clk-gate-reg-write-enable-bit = <0x16>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					rtc_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x09>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					gpio_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					iomux_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x07>;
++						clk-gate-reg-write-enable-bit = <0x17>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					i2c_0_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					i2c_1_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					i2c_2_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x02>;
++						clk-gate-reg-write-enable-bit = <0x12>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					i2c_3_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb4>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					i2c_4_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb4>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					i2c_5_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb4>;
++						clk-gate-reg-bit-enable = <0x02>;
++						clk-gate-reg-write-enable-bit = <0x12>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					i2c_6_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb4>;
++						clk-gate-reg-bit-enable = <0x03>;
++						clk-gate-reg-write-enable-bit = <0x13>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					pwm_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x0a>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x55>;
++					};
++
++					mailbox_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x0b>;
++						clk-gate-reg-write-enable-bit = <0x1b>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x54>;
++					};
++
++					vad_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x34>;
++						clk-gate-reg-offset = <0xb0>;
++						clk-gate-reg-bit-enable = <0x0c>;
++						clk-gate-reg-write-enable-bit = <0x1c>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					display_sys_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x35>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x10>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x118>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x0f>;
++						clk-rate-reg-write-enable-bit = <0x14>;
++						phandle = <0x36>;
++					};
++
++					dsi_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x36>;
++						clk-gate-reg-offset = <0x118>;
++						clk-gate-reg-bit-enable = <0x02>;
++						clk-gate-reg-write-enable-bit = <0x12>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x78>;
++					};
++
++					dsi_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x36>;
++						clk-gate-reg-offset = <0x14c>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x79>;
++					};
++
++					vo_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x36>;
++						clk-gate-reg-offset = <0x118>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x74>;
++					};
++
++					twod_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x36>;
++						clk-gate-reg-offset = <0x118>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x6f>;
++					};
++
++					bt1120_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x36>;
++						clk-gate-reg-offset = <0x118>;
++						clk-gate-reg-bit-enable = <0x03>;
++						clk-gate-reg-write-enable-bit = <0x13>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					csi0_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x35>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x10>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x13c>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x0f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0x13c>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x5b>;
++					};
++
++					csi1_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x35>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x10>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x140>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x0f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0x140>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x5e>;
++					};
++
++					csi0_pixel {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x37>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x80>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x124>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x7f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0x124>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x5d>;
++					};
++
++					csi1_pixel {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x37 0x29 0x25 0x26>;
++						clk-parent-reg-offset = <0x128>;
++						clk-parent-reg-value-shift = <0x09>;
++						clk-parent-reg-value-mask = <0x03>;
++						clk-parent-reg-write-enable-bit = <0x1a>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x80>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x128>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x7f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0x128>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x60>;
++					};
++
++					tpg_pixel {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x37>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x80>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x120>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x7f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0x120>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x63>;
++					};
++
++					display_pixel {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x37 0x29 0x25 0x26>;
++						clk-parent-reg-offset = <0x134>;
++						clk-parent-reg-value-shift = <0x09>;
++						clk-parent-reg-value-mask = <0x03>;
++						clk-parent-reg-write-enable-bit = <0x1a>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x80>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x134>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x7f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0x134>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x7a>;
++					};
++
++					noc_clk1 {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2e>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x06>;
++						clk-rate-conf-div-min = <0x06>;
++						clk-rate-conf-div-max = <0x06>;
++						clk-rate-calc-method = <0x00>;
++						clk-rate-reg-offset = <0x40>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x08>;
++						clk-rate-reg-div-value-mask = <0x07>;
++						clk-rate-reg-write-enable-bit = <0x1a>;
++						phandle = <0x38>;
++					};
++
++					noc1_axi_mctl {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x38>;
++						clk-gate-reg-offset = <0x168>;
++						clk-gate-reg-bit-enable = <0x0b>;
++						clk-gate-reg-write-enable-bit = <0x16>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					h264_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x38>;
++						clk-gate-reg-offset = <0x150>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x7f>;
++					};
++
++					noc_peri_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x38>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x04>;
++						clk-rate-conf-div-max = <0x10>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x50>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x08>;
++						clk-rate-reg-div-value-mask = <0x0f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						phandle = <0x39>;
++					};
++
++					uart_0_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x39>;
++						clk-gate-reg-offset = <0x54>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					uart_1_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x39>;
++						clk-gate-reg-offset = <0x54>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					uart_2_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x39>;
++						clk-gate-reg-offset = <0x54>;
++						clk-gate-reg-bit-enable = <0x02>;
++						clk-gate-reg-write-enable-bit = <0x12>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					uart_3_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x39>;
++						clk-gate-reg-offset = <0x54>;
++						clk-gate-reg-bit-enable = <0x03>;
++						clk-gate-reg-write-enable-bit = <0x13>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					i2s_s_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x39>;
++						clk-gate-reg-offset = <0x54>;
++						clk-gate-reg-bit-enable = <0x05>;
++						clk-gate-reg-write-enable-bit = <0x15>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					audio_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x39>;
++						clk-gate-reg-offset = <0x54>;
++						clk-gate-reg-bit-enable = <0x0a>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					noc_peri_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x38>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x02>;
++						clk-rate-conf-div-max = <0x08>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x50>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x07>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						phandle = <0x3a>;
++					};
++
++					spi_0_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3a>;
++						clk-gate-reg-offset = <0x54>;
++						clk-gate-reg-bit-enable = <0x06>;
++						clk-gate-reg-write-enable-bit = <0x16>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x0a>;
++					};
++
++					spi_1_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3a>;
++						clk-gate-reg-offset = <0x54>;
++						clk-gate-reg-bit-enable = <0x07>;
++						clk-gate-reg-write-enable-bit = <0x17>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x0d>;
++					};
++
++					spi_2_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3a>;
++						clk-gate-reg-offset = <0x54>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x10>;
++					};
++
++					spi_3_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3a>;
++						clk-gate-reg-offset = <0x54>;
++						clk-gate-reg-bit-enable = <0x09>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					vo_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x38>;
++						clk-gate-reg-offset = <0x11c>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x75>;
++					};
++
++					twod_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x38>;
++						clk-gate-reg-offset = <0x11c>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x70>;
++					};
++
++					fbc_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x38>;
++						clk-gate-reg-offset = <0x114>;
++						clk-gate-reg-bit-enable = <0x05>;
++						clk-gate-reg-write-enable-bit = <0x15>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x6b>;
++					};
++
++					vi_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x38>;
++						clk-gate-reg-offset = <0x114>;
++						clk-gate-reg-bit-enable = <0x04>;
++						clk-gate-reg-write-enable-bit = <0x14>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x61>;
++					};
++
++					isp_f2k_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x38>;
++						clk-gate-reg-offset = <0x114>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x65>;
++					};
++
++					isp_r2k_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x38>;
++						clk-gate-reg-offset = <0x114>;
++						clk-gate-reg-bit-enable = <0x02>;
++						clk-gate-reg-write-enable-bit = <0x12>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x67>;
++					};
++
++					isp_tof_axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x38>;
++						clk-gate-reg-offset = <0x114>;
++						clk-gate-reg-bit-enable = <0x03>;
++						clk-gate-reg-write-enable-bit = <0x13>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x69>;
++					};
++
++					noc_clk1_div4 {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x38>;
++						clock-div = <0x04>;
++						clock-mult = <0x01>;
++						phandle = <0x3b>;
++					};
++
++					csi0_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3b>;
++						clk-gate-reg-offset = <0x110>;
++						clk-gate-reg-bit-enable = <0x04>;
++						clk-gate-reg-write-enable-bit = <0x14>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x5c>;
++					};
++
++					csi1_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3b>;
++						clk-gate-reg-offset = <0x110>;
++						clk-gate-reg-bit-enable = <0x05>;
++						clk-gate-reg-write-enable-bit = <0x15>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x5f>;
++					};
++
++					csi2_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3b>;
++						clk-gate-reg-offset = <0x110>;
++						clk-gate-reg-bit-enable = <0x06>;
++						clk-gate-reg-write-enable-bit = <0x16>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					csi3_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3b>;
++						clk-gate-reg-offset = <0x110>;
++						clk-gate-reg-bit-enable = <0x07>;
++						clk-gate-reg-write-enable-bit = <0x17>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					isp_f2k_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3b>;
++						clk-gate-reg-offset = <0x110>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x64>;
++					};
++
++					isp_r2k_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3b>;
++						clk-gate-reg-offset = <0x110>;
++						clk-gate-reg-bit-enable = <0x02>;
++						clk-gate-reg-write-enable-bit = <0x12>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x66>;
++					};
++
++					isp_tof_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3b>;
++						clk-gate-reg-offset = <0x110>;
++						clk-gate-reg-bit-enable = <0x03>;
++						clk-gate-reg-write-enable-bit = <0x13>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x68>;
++					};
++
++					fbc_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3b>;
++						clk-gate-reg-offset = <0x110>;
++						clk-gate-reg-bit-enable = <0x0a>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x6a>;
++					};
++
++					mipi_corner {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3b>;
++						clk-gate-reg-offset = <0x15c>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x59>;
++					};
++
++					vi_apb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3b>;
++						clk-gate-reg-offset = <0x110>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x62>;
++					};
++
++					audio_o_serial {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x25>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0xff>;
++						clk-rate-conf-div-min = <0x10>;
++						clk-rate-conf-div-max = <0xfff>;
++						clk-rate-calc-method = <0x02>;
++						clk-rate-reg-offset = <0x88>;
++						clk-rate-reg-mul-value-shift = <0x0c>;
++						clk-rate-reg-mul-value-mask = <0xff>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0xfff>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0x88>;
++						clk-gate-reg-bit-enable = <0x14>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						clk-phase-invert-reg-offset = <0x88>;
++						clk-phase-invert-reg-bit = <0x15>;
++						clk-phase-invert-reg-write-enable-bit = <0x1a>;
++					};
++
++					audio_i_serial {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x25>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0xff>;
++						clk-rate-conf-div-min = <0x10>;
++						clk-rate-conf-div-max = <0xfff>;
++						clk-rate-calc-method = <0x02>;
++						clk-rate-reg-offset = <0x8c>;
++						clk-rate-reg-mul-value-shift = <0x0c>;
++						clk-rate-reg-mul-value-mask = <0xff>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0xfff>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0x8c>;
++						clk-gate-reg-bit-enable = <0x14>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						clk-phase-invert-reg-offset = <0x8c>;
++						clk-phase-invert-reg-bit = <0x15>;
++						clk-phase-invert-reg-write-enable-bit = <0x1a>;
++						phandle = <0x21>;
++					};
++
++					sd_master {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x25>;
++						clock-div = <0x05>;
++						clock-mult = <0x01>;
++						phandle = <0x3c>;
++					};
++
++					sd_0_master {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3c>;
++						clk-gate-reg-offset = <0x108>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x14>;
++					};
++
++					sd_1_master {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3c>;
++						clk-gate-reg-offset = <0x108>;
++						clk-gate-reg-bit-enable = <0x04>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x16>;
++					};
++
++					sd_2_master {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3c>;
++						clk-gate-reg-offset = <0x108>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x19>;
++					};
++
++					mipi_ref {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2a 0x26>;
++						clk-parent-reg-offset = <0x158>;
++						clk-parent-reg-value-shift = <0x02>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x12>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x10>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x158>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x0f>;
++						clk-rate-reg-write-enable-bit = <0x13>;
++						phandle = <0x3d>;
++					};
++
++					mipi_txphy_ref {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3d>;
++						clk-gate-reg-offset = <0x158>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x71>;
++					};
++
++					mipi_rxphy_ref {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3d>;
++						clk-gate-reg-offset = <0x15c>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x5a>;
++					};
++
++					mipi_txphy_pll {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24>;
++						clk-gate-reg-offset = <0x158>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x72>;
++					};
++
++					sec_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3e>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x08>;
++						clk-rate-conf-div-min = <0x08>;
++						clk-rate-conf-div-max = <0x08>;
++						clk-rate-calc-method = <0x00>;
++						clk-rate-reg-offset = <0x90>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x07>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0x94>;
++						clk-gate-reg-bit-enable = <0x06>;
++						clk-gate-reg-write-enable-bit = <0x16>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x3f>;
++					};
++
++					sha_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3f>;
++						clk-gate-reg-offset = <0x94>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x09>;
++					};
++
++					aes_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3f>;
++						clk-gate-reg-offset = <0x94>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x07>;
++					};
++
++					rom_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3f>;
++						clk-gate-reg-offset = <0x94>;
++						clk-gate-reg-bit-enable = <0x03>;
++						clk-gate-reg-write-enable-bit = <0x13>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					otp_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3f>;
++						clk-gate-reg-offset = <0x94>;
++						clk-gate-reg-bit-enable = <0x04>;
++						clk-gate-reg-write-enable-bit = <0x14>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					puf_ahb {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x3f>;
++						clk-gate-reg-offset = <0x94>;
++						clk-gate-reg-bit-enable = <0x05>;
++						clk-gate-reg-write-enable-bit = <0x15>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					mctl_ddrc {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x26 0x2a 0x40 0x41>;
++						clk-parent-reg-offset = <0x168>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x03>;
++						clk-parent-reg-write-enable-bit = <0x10>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x02>;
++						clk-rate-conf-div-max = <0x04>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x168>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x03>;
++						clk-rate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-offset = <0x168>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x13>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					emac_loopback {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x42>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x02>;
++						clk-rate-conf-div-max = <0x80>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x104>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x0a>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x1f>;
++						clk-gate-reg-offset = <0x104>;
++						clk-gate-reg-bit-enable = <0x03>;
++						clk-gate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					uart_0_sclk {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24 0x35>;
++						clk-parent-reg-offset = <0x5c>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x20>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x5c>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x1f>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-offset = <0x5c>;
++						clk-gate-reg-bit-enable = <0x0c>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					uart_1_sclk {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24 0x35>;
++						clk-parent-reg-offset = <0x60>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x20>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x60>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x1f>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-offset = <0x60>;
++						clk-gate-reg-bit-enable = <0x0c>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					uart_2_sclk {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24 0x35>;
++						clk-parent-reg-offset = <0x64>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x20>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x64>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x1f>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-offset = <0x64>;
++						clk-gate-reg-bit-enable = <0x0c>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					uart_3_sclk {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24 0x35>;
++						clk-parent-reg-offset = <0x68>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x20>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x68>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x1f>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-offset = <0x68>;
++						clk-gate-reg-bit-enable = <0x0c>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					spi_0_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24 0x25>;
++						clk-parent-reg-offset = <0x74>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x10>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x74>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x0f>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-offset = <0x74>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x0b>;
++					};
++
++					spi_1_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24 0x25>;
++						clk-parent-reg-offset = <0x78>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x10>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x78>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x0f>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-offset = <0x78>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x0e>;
++					};
++
++					spi_2_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24 0x25>;
++						clk-parent-reg-offset = <0x7c>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x10>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x7c>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x0f>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-offset = <0x7c>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x11>;
++					};
++
++					spi_3_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x10>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0x80>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x04>;
++						clk-rate-reg-div-value-mask = <0x0f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0x80>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					otp_sys_src {
++						#clock-cells = <0x00>;
++						compatible = "fixed-factor-clock";
++						clocks = <0x24>;
++						clock-div = <0x02>;
++						clock-mult = <0x01>;
++						phandle = <0x43>;
++					};
++
++					otp_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x43>;
++						clk-gate-reg-offset = <0x98>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x10>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					i2c_0_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x42 0x24>;
++						clk-parent-reg-offset = <0xb8>;
++						clk-parent-reg-value-shift = <0x09>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x1a>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xb8>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0xb8>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x48>;
++					};
++
++					i2c_1_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x42 0x24>;
++						clk-parent-reg-offset = <0xbc>;
++						clk-parent-reg-value-shift = <0x09>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x1a>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xbc>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0xbc>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x49>;
++					};
++
++					i2c_2_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x42 0x24>;
++						clk-parent-reg-offset = <0xc0>;
++						clk-parent-reg-value-shift = <0x09>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x1a>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xc0>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0xc0>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x4c>;
++					};
++
++					i2c_3_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x42 0x24>;
++						clk-parent-reg-offset = <0xc4>;
++						clk-parent-reg-value-shift = <0x09>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x1a>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xc4>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0xc4>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x4e>;
++					};
++
++					i2c_4_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x42 0x24>;
++						clk-parent-reg-offset = <0xc8>;
++						clk-parent-reg-value-shift = <0x09>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x1a>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xc8>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0xc8>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x51>;
++					};
++
++					i2c_5_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x42 0x24>;
++						clk-parent-reg-offset = <0xcc>;
++						clk-parent-reg-value-shift = <0x09>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x1a>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xcc>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0xcc>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					i2c_6_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x42 0x24>;
++						clk-parent-reg-offset = <0xd0>;
++						clk-parent-reg-value-shift = <0x09>;
++						clk-parent-reg-value-mask = <0x01>;
++						clk-parent-reg-write-enable-bit = <0x1a>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xd0>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0xd0>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					wdt_0_tick {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xd4>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0xd4>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x44>;
++					};
++
++					wdt_1_tick {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xd8>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0xd8>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x45>;
++					};
++
++					wdt_2_tick {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xdc>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0xdc>;
++						clk-gate-reg-bit-enable = <0x08>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						phandle = <0x46>;
++					};
++
++					vad_system {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x3f>;
++						clk-rate-conf-div-min = <0x20>;
++						clk-rate-conf-div-max = <0xfff>;
++						clk-rate-calc-method = <0x02>;
++						clk-rate-reg-offset = <0xec>;
++						clk-rate-reg-mul-value-shift = <0x0c>;
++						clk-rate-reg-mul-value-mask = <0x3f>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0xfff>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0xec>;
++						clk-gate-reg-bit-enable = <0x12>;
++						clk-gate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-bit-reverse = <0x00>;
++						clk-phase-invert-reg-offset = <0xec>;
++						clk-phase-invert-reg-bit = <0x14>;
++						clk-phase-invert-reg-write-enable-bit = <0x1b>;
++					};
++
++					timer_0_tick {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2c 0x24>;
++						clk-parent-reg-offset = <0xe0>;
++						clk-parent-reg-value-shift = <0x00>;
++						clk-parent-reg-value-mask = <0x03>;
++						clk-parent-reg-write-enable-bit = <0x18>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xe4>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-offset = <0xe4>;
++						clk-gate-reg-bit-enable = <0x18>;
++						clk-gate-reg-write-enable-bit = <0x1d>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					timer_1_tick {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2c 0x24>;
++						clk-parent-reg-offset = <0xe0>;
++						clk-parent-reg-value-shift = <0x04>;
++						clk-parent-reg-value-mask = <0x03>;
++						clk-parent-reg-write-enable-bit = <0x19>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xe4>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x06>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x1a>;
++						clk-gate-reg-offset = <0xe4>;
++						clk-gate-reg-bit-enable = <0x18>;
++						clk-gate-reg-write-enable-bit = <0x1d>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					timer_2_tick {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2c 0x24>;
++						clk-parent-reg-offset = <0xe0>;
++						clk-parent-reg-value-shift = <0x08>;
++						clk-parent-reg-value-mask = <0x03>;
++						clk-parent-reg-write-enable-bit = <0x1a>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xe4>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x0c>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x1b>;
++						clk-gate-reg-offset = <0xe4>;
++						clk-gate-reg-bit-enable = <0x18>;
++						clk-gate-reg-write-enable-bit = <0x1d>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					timer_3_tick {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2c 0x24>;
++						clk-parent-reg-offset = <0xe0>;
++						clk-parent-reg-value-shift = <0x0c>;
++						clk-parent-reg-value-mask = <0x03>;
++						clk-parent-reg-write-enable-bit = <0x1b>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xe4>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x12>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x1c>;
++						clk-gate-reg-offset = <0xe4>;
++						clk-gate-reg-bit-enable = <0x18>;
++						clk-gate-reg-write-enable-bit = <0x1d>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					timer_4_tick {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2c 0x24>;
++						clk-parent-reg-offset = <0xe0>;
++						clk-parent-reg-value-shift = <0x10>;
++						clk-parent-reg-value-mask = <0x03>;
++						clk-parent-reg-write-enable-bit = <0x1c>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xe8>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x00>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-offset = <0xe4>;
++						clk-gate-reg-bit-enable = <0x18>;
++						clk-gate-reg-write-enable-bit = <0x1d>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					timer_5_tick {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2c 0x24>;
++						clk-parent-reg-offset = <0xe0>;
++						clk-parent-reg-value-shift = <0x14>;
++						clk-parent-reg-value-mask = <0x03>;
++						clk-parent-reg-write-enable-bit = <0x1d>;
++						clk-rate-conf-mul-min = <0x01>;
++						clk-rate-conf-mul-max = <0x01>;
++						clk-rate-conf-div-min = <0x01>;
++						clk-rate-conf-div-max = <0x40>;
++						clk-rate-calc-method = <0x01>;
++						clk-rate-reg-offset = <0xe8>;
++						clk-rate-reg-mul-value-shift = <0x00>;
++						clk-rate-reg-mul-value-mask = <0x00>;
++						clk-rate-reg-div-value-shift = <0x06>;
++						clk-rate-reg-div-value-mask = <0x3f>;
++						clk-rate-reg-write-enable-bit = <0x19>;
++						clk-gate-reg-offset = <0xe4>;
++						clk-gate-reg-bit-enable = <0x18>;
++						clk-gate-reg-write-enable-bit = <0x1d>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					usb_phy_core {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24>;
++						clk-gate-reg-offset = <0x154>;
++						clk-gate-reg-bit-enable = <0x02>;
++						clk-gate-reg-write-enable-bit = <0x12>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					usb_wakeup {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x2c>;
++						clk-gate-reg-offset = <0x154>;
++						clk-gate-reg-bit-enable = <0x01>;
++						clk-gate-reg-write-enable-bit = <0x11>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					i2c2axi {
++						#clock-cells = <0x00>;
++						compatible = "canaan,k510-clk-composite";
++						clocks = <0x24>;
++						clk-gate-reg-offset = <0x3c>;
++						clk-gate-reg-bit-enable = <0x00>;
++						clk-gate-reg-write-enable-bit = <0x18>;
++						clk-gate-reg-bit-reverse = <0x00>;
++					};
++
++					emac_refclk {
++						status = "okay";
++						#clock-cells = <0x00>;
++						compatible = "fixed-clock";
++						clock-frequency = <0x2faf080>;
++						phandle = <0x1b>;
++					};
++				};
++
++				sysctl_reset@97002000 {
++					status = "okay";
++					compatible = "canaan,k510-sysctl-reset";
++					reg = <0x00 0x97002000 0x00 0x1000>;
++					#reset-cells = <0x04>;
++					phandle = <0x04>;
++				};
++
++				sysctl_power@97003000 {
++					status = "okay";
++					compatible = "canaan, k510-sysctl-power";
++					reg = <0x00 0x97003000 0x00 0x1000>;
++					#power-domain-cells = <0x01>;
++					phandle = <0x05>;
++				};
++
++				wdt@97010000 {
++					status = "okay";
++					compatible = "snps,dw-wdt";
++					reg = <0x00 0x97010000 0x00 0x100>;
++					clocks = <0x44>;
++					resets = <0x04 0x40 0x02 0x00 0x03>;
++					reset-names = "wdt0_rst";
++				};
++
++				wdt@97020000 {
++					status = "okay";
++					compatible = "snps,dw-wdt";
++					reg = <0x00 0x97020000 0x00 0x100>;
++					clocks = <0x45>;
++					resets = <0x04 0x40 0x02 0x00 0x04>;
++					reset-names = "wdt1_rst";
++				};
++
++				wdt@97030000 {
++					status = "okay";
++					compatible = "snps,dw-wdt";
++					reg = <0x00 0x97030000 0x00 0x100>;
++					clocks = <0x46>;
++					resets = <0x04 0x40 0x02 0x00 0x05>;
++					reset-names = "wdt2_rst";
++				};
++
++				iomux@97040000 {
++					status = "okay";
++					compatible = "pinctrl-k510";
++					reg = <0x00 0x97040000 0x00 0x1000>;
++					resets = <0x04 0x40 0x02 0x00 0x09>;
++					reset-names = "iomux_rst";
++					#pinctrl-cells = <0x01>;
++					pinctrl-k510,register-width = <0x20>;
++					pinctrl-k510,function-mask = <0xffffffff>;
++
++					iomux_emac_pins {
++						pinctrl-k510,pins = <0x23 0x23012d 0x24 0x24012e 0x22 0x22012c 0x26 0x260132 0x20 0x20012a 0x2e 0x2e013a 0x2d 0x2d0139 0x2a 0x2a0136 0x29 0x290135 0x1d 0x1d0126>;
++					};
++
++					iomux_mmc0_pins {
++						pinctrl-k510,pins = <0x07 0x70107 0x08 0x80108 0x09 0x90109 0x0a 0xa010a 0x0b 0xb010b 0x0c 0xc010c 0x0d 0xd010d 0x0e 0xe010e 0x0f 0xf010f 0x10 0x100110>;
++						phandle = <0x15>;
++					};
++
++					iomux_mmc2_pins {
++						pinctrl-k510,pins = <0x17 0x170117 0x18 0x180118 0x19 0x190119 0x1a 0x1a011a 0x1b 0x1b011b 0x1c 0x1c011c>;
++						phandle = <0x1a>;
++					};
++
++					iomux_uart0_pins {
++						pinctrl-k510,pins = <0x70 0x54 0x71 0x5a>;
++						phandle = <0x1f>;
++					};
++
++					iomux_uart1_pins {
++						pinctrl-k510,pins = <0x72 0x64 0x73 0x6a>;
++						phandle = <0x20>;
++					};
++
++					iomux_emac_rgmii_pins {
++						pinctrl-k510,pins = <0x23 0x23012d 0x24 0x24012e 0x1d 0x1d0123 0x26 0x260131 0x2e 0x2e013a 0x2d 0x2d0139 0x2c 0x2c0138 0x2b 0x2b0137 0x1e 0x1e0128 0x25 0x25012f 0x2a 0x2a0136 0x29 0x290135 0x28 0x280134 0x27 0x270133>;
++						phandle = <0x1c>;
++					};
++
++					iomux_i2s_pins {
++						pinctrl-k510,pins = <0x64 0xab 0x65 0xad 0x63 0xa3 0x62 0x93>;
++						phandle = <0x22>;
++					};
++
++					iomux_i2c1_pins {
++						pinctrl-k510,pins = <0x78 0x44 0x79 0x45>;
++						phandle = <0x4a>;
++					};
++
++					iomux_i2c2_pins {
++						pinctrl-k510,pins = <0x67 0x46 0x66 0x47>;
++						phandle = <0x4d>;
++					};
++
++					iomux_i2c3_pins {
++						pinctrl-k510,pins = <0x74 0x49 0x75 0x48>;
++						phandle = <0x4f>;
++					};
++
++					iomux_i2c4_pins {
++						pinctrl-k510,pins = <0x30 0x4b 0x2f 0x4a>;
++						phandle = <0x52>;
++					};
++
++					iomux_dvp_pins {
++						pinctrl-k510,pins = <0x33 0x33013f 0x34 0x340140 0x35 0x350141 0x36 0x360142 0x37 0x370143 0x38 0x380144 0x39 0x390145 0x3a 0x3a0146 0x3b 0x3b0147 0x3c 0x3c0148 0x3d 0x3d0149 0x3e 0x3e014a 0x3f 0x3f014b 0x40 0x40014c 0x42 0x42014e>;
++						phandle = <0x6c>;
++					};
++
++					iomux_gpio_pins {
++						pinctrl-k510,pins = <0x20 0x20 0x22 0x1f 0x45 0x0c 0x46 0x0d 0x47 0x0e 0x4b 0x0f 0x4c 0x10 0x4d 0x11 0x4e 0x1d 0x4f 0x1e 0x50 0x14 0x51 0x15 0x53 0x16 0x54 0x17 0x55 0x18 0x61 0x19 0x7b 0x1a>;
++						phandle = <0x47>;
++					};
++
++					iomux_pwm0_pins {
++						pinctrl-k510,pins = <0x7e 0xb3>;
++						phandle = <0x56>;
++					};
++
++					iomux_pwm1_pins {
++						pinctrl-k510,pins = <0x7f 0xb7>;
++						phandle = <0x57>;
++					};
++
++					iomux_spi0_pins {
++						pinctrl-k510,pins = <0x56 0x560162 0x57 0x570163 0x58 0x580164 0x59 0x590165 0x5a 0x5a0166 0x5b 0x5b0167>;
++						phandle = <0x0c>;
++					};
++
++					iomux_spi1_pins {
++						pinctrl-k510,pins = <0x68 0x08 0x69 0x09 0x6a 0x00 0x6b 0x01>;
++						phandle = <0x0f>;
++					};
++
++					iomux_spi2_pins {
++						pinctrl-k510,pins = <0x7a 0x2a>;
++						phandle = <0x12>;
++					};
++
++					iomux_mmc1_pins {
++						pinctrl-k510,pins = <0x11 0x110111 0x12 0x120112 0x13 0x130113 0x14 0x140114 0x15 0x150115 0x16 0x160116>;
++						phandle = <0x17>;
++					};
++				};
++
++				gpio@97050000 {
++					status = "okay";
++					compatible = "snps,dw-apb-gpio";
++					reg = <0x00 0x97050000 0x00 0x80>;
++					power-domains = <0x05 0x06>;
++					#address-cells = <0x01>;
++					#size-cells = <0x00>;
++					pinctrl-names = "default";
++					pinctrl-0 = <0x47>;
++
++					gpio@0 {
++						compatible = "snps,dw-apb-gpio-port";
++						gpio-controller;
++						#gpio-cells = <0x02>;
++						snps,nr-gpios = <0x20>;
++						reg = <0x00>;
++						interrupt-controller;
++						#interrupt-cells = <0x02>;
++						interrupt-parent = <0x06>;
++						interrupts = <0x13 0x04>;
++						phandle = <0x13>;
++					};
++				};
++
++				i2c@97060000 {
++					status = "disabled";
++					compatible = "snps,designware-i2c";
++					reg = <0x00 0x97060000 0x00 0x100>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x0c 0x04>;
++					clocks = <0x48>;
++					clock-frequency = <0x186a0>;
++					resets = <0x04 0x40 0x02 0x00 0x00>;
++					reset-names = "i2c0_rst";
++				};
++
++				i2c@97070000 {
++					status = "disabled";
++					compatible = "snps,designware-i2c";
++					reg = <0x00 0x97070000 0x00 0x100>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x0d 0x04>;
++					clocks = <0x49>;
++					clock-frequency = <0x186a0>;
++					resets = <0x04 0x40 0x02 0x00 0x01>;
++					reset-names = "i2c1_rst";
++					#address-cells = <0x01>;
++					#size-cells = <0x00>;
++					pinctrl-names = "default";
++					pinctrl-0 = <0x4a>;
++
++					imx219_0@10 {
++						compatible = "sony,imx219_0";
++						reg = <0x10>;
++						canaanchip,camera-module-index = <0x00>;
++						canaanchip,camera-module-facing = "front";
++						canaanchip,camera-module-name = "BFC105-DUAL-L";
++						canaanchip,camera-module-lens-name = "RGB";
++						hflip = <0x01>;
++
++						port {
++
++							endpoint {
++								remote-endpoint = <0x4b>;
++								data-lanes = <0x01 0x02>;
++								phandle = <0x6d>;
++							};
++						};
++					};
++				};
++
++				i2c@97080000 {
++					status = "disabled";
++					compatible = "snps,designware-i2c";
++					reg = <0x00 0x97080000 0x00 0x100>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x0e 0x04>;
++					clocks = <0x4c>;
++					clock-frequency = <0x186a0>;
++					resets = <0x04 0x40 0x02 0x00 0x02>;
++					reset-names = "i2c2_rst";
++					#address-cells = <0x01>;
++					#size-cells = <0x00>;
++					pinctrl-names = "default";
++					pinctrl-0 = <0x4d>;
++
++					touchscreen@5d {
++						compatible = "goodix,gt911";
++						reg = <0x5d>;
++						interrupt-parent = <0x13>;
++						interrupts = <0x0c 0x04>;
++						irq-gpios = <0x13 0x0c 0x00>;
++						reset-gpios = <0x13 0x0a 0x00>;
++						touchscreen-size-x = <0x438>;
++						touchscreen-size-y = <0x780>;
++						goodix,cfg-group0 = [42 38 04 80 07 05 35 00 01 08 28 08 50 32 03 05 00 00 00 00 11 11 05 18 1a 1e 14 89 29 0c 3d 3f 0c 08 00 00 00 2a 02 2c 32 00 00 00 00 03 64 32 00 00 00 2d 5a 94 d5 02 00 00 00 04 8e 30 00 80 37 00 74 3f 00 69 49 00 60 54 00 60 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 18 16 14 12 10 0e 0c 0a 08 06 04 02 ff ff 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02 04 06 08 0a 0f 10 12 22 21 20 1f 1e 1d 1c 18 16 ff ff ff ff ff ff ff ff 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 36 01];
++						status = "okay";
++					};
++				};
++
++				i2c@97090000 {
++					status = "disabled";
++					compatible = "snps,designware-i2c";
++					reg = <0x00 0x97090000 0x00 0x100>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x0f 0x04>;
++					clocks = <0x4e>;
++					clock-frequency = <0x186a0>;
++					resets = <0x04 0x44 0x02 0x00 0x00>;
++					reset-names = "i2c3_rst";
++					#address-cells = <0x01>;
++					#size-cells = <0x00>;
++					pinctrl-names = "default";
++					pinctrl-0 = <0x4f>;
++
++					nau8822@1a {
++						compatible = "nuvoton,nau8822";
++						reg = <0x1a>;
++						clock-names = "mclk";
++						clocks = <0x50>;
++						interrupt-parent = <0x13>;
++						interrupts = <0x05 0x02>;
++						phandle = <0x81>;
++					};
++
++					lt9611@3b {
++						compatible = "lontium,lt9611";
++						reg = <0x3b>;
++						reset-gpios = <0x13 0x0f 0x01>;
++					};
++				};
++
++				i2c@970a0000 {
++					status = "disabled";
++					compatible = "snps,designware-i2c";
++					reg = <0x00 0x970a0000 0x00 0x100>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x10 0x04>;
++					clocks = <0x51>;
++					clock-frequency = <0x186a0>;
++					resets = <0x04 0x44 0x02 0x00 0x01>;
++					reset-names = "i2c4_rst";
++					#address-cells = <0x01>;
++					#size-cells = <0x00>;
++					pinctrl-names = "default";
++					pinctrl-0 = <0x52>;
++
++					imx219_1@10 {
++						compatible = "sony,imx219_1";
++						reg = <0x10>;
++						canaanchip,camera-module-index = <0x01>;
++						canaanchip,camera-module-facing = "front";
++						canaanchip,camera-module-name = "BFC105-DUAL-L";
++						canaanchip,camera-module-lens-name = "RGB";
++						hflip = <0x01>;
++
++						port {
++
++							endpoint {
++								remote-endpoint = <0x53>;
++								data-lanes = <0x03 0x04>;
++								phandle = <0x6e>;
++							};
++						};
++					};
++				};
++
++				i2c@970b0000 {
++					status = "disabled";
++					compatible = "snps,designware-i2c";
++					reg = <0x00 0x970b0000 0x00 0x100>;
++					resets = <0x04 0x44 0x02 0x00 0x02>;
++					reset-names = "i2c5_rst";
++				};
++
++				i2c@970c0000 {
++					status = "disabled";
++					compatible = "snps,designware-i2c";
++					reg = <0x00 0x970c0000 0x00 0x100>;
++					resets = <0x04 0x44 0x02 0x00 0x03>;
++					reset-names = "i2c6_rst";
++				};
++
++				rtc@970d0000 {
++					status = "disabled";
++					compatible = "canaan,k510-rtc";
++					reg = <0x00 0x970d0000 0x00 0x100>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x16 0x00 0x15 0x00>;
++					resets = <0x04 0x40 0x02 0x00 0x07>;
++					reset-names = "rtc_rst";
++				};
++
++				mailbox@970e0000 {
++					status = "okay";
++					compatible = "canaan,k510-mailbox";
++					reg = <0x00 0x970e0000 0x00 0x300>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x41 0x04>;
++					clocks = <0x54>;
++					resets = <0x04 0x40 0x02 0x00 0x0a>;
++					reset-names = "mailbox_rst";
++					#mbox-cells = <0x01>;
++					phandle = <0x58>;
++				};
++
++				tsensor@970e0300 {
++					status = "disabled";
++					compatible = "canaan,k510-tsensor";
++					reg = <0x00 0x970e0300 0x00 0x100>;
++					interrupt-parent = <0x06>;
++					interrupts = <0x1c 0x04>;
++					clocks = <0x54>;
++				};
++
++				pwm0@970f0000 {
++					status = "disabled";
++					compatible = "canaan,k510-pwm";
++					reg = <0x00 0x970f0000 0x00 0x40>;
++					clocks = <0x55>;
++					clock-names = "pwm";
++					resets = <0x04 0x40 0x02 0x00 0x0b>;
++					reset-names = "pwm_rst";
++					pinctrl-names = "default";
++					pinctrl-0 = <0x56>;
++				};
++
++				pwm1@970f0000 {
++					status = "disabled";
++					compatible = "canaan,k510-pwm";
++					reg = <0x00 0x970f0040 0x00 0x40>;
++					clocks = <0x55>;
++					clock-names = "pwm";
++					resets = <0x04 0x40 0x02 0x00 0x0b>;
++					reset-names = "pwm_rst";
++					pinctrl-names = "default";
++					pinctrl-0 = <0x57>;
++				};
++
++				vad@97100000 {
++					status = "okay";
++					compatible = "canaan,k510-vad";
++					reg = <0x00 0x97100000 0x00 0x100>;
++					resets = <0x04 0x40 0x02 0x00 0x0c>;
++					reset-names = "vad_rst";
++				};
++
++				timer@97200000 {
++					status = "okay";
++					compatible = "snps,arc-timer";
++					reg = <0x00 0x97200000 0x00 0x100>;
++					resets = <0x04 0x40 0x02 0x00 0x06>;
++					reset-names = "vad_rst";
++				};
++
++				wifi-pwrseq {
++					compatible = "mmc-pwrseq-simple";
++					reset-gpios = <0x13 0x0e 0x01>;
++					phandle = <0x18>;
++				};
++
++				mailbox_client@0 {
++					compatible = "mailbox-client";
++					mboxes = <0x58 0x00 0x58 0x01 0x58 0x02 0x58 0x03 0x58 0x04 0x58 0x05 0x58 0x06 0x58 0x07 0x58 0x08 0x58 0x09 0x58 0x0a 0x58 0x0b 0x58 0x0c 0x58 0x0d 0x58 0x0e 0x58 0x0f>;
++					mbox-names = "tx_chan_0\0tx_chan_1\0tx_chan_2\0tx_chan_3\0tx_chan_4\0tx_chan_5\0tx_chan_6\0tx_chan_7\0rx_chan_0\0rx_chan_1\0rx_chan_2\0rx_chan_3\0rx_chan_4\0rx_chan_5\0rx_chan_6\0rx_chan_7";
++					reg = <0x01 0x87ffe00 0x00 0x20 0x01 0x87ffe20 0x00 0x20 0x01 0x87ffe40 0x00 0x20 0x01 0x87ffe60 0x00 0x20 0x01 0x87ffe80 0x00 0x20 0x01 0x87ffea0 0x00 0x20 0x01 0x87ffec0 0x00 0x20 0x01 0x87ffee0 0x00 0x20 0x01 0x87fff00 0x00 0x20 0x01 0x87fff20 0x00 0x20 0x01 0x87fff40 0x00 0x20 0x01 0x87fff60 0x00 0x20 0x01 0x87fff80 0x00 0x20 0x01 0x87fffa0 0x00 0x20 0x01 0x87fffc0 0x00 0x20 0x01 0x87fffe0 0x00 0x20>;
++				};
++			};
++
++			isp@92600000 {
++				status = "disabled";
++				compatible = "canaan,k510-isp";
++				reg = <0x00 0x92600000 0x00 0x200000>;
++				interrupt-parent = <0x06>;
++				interrupts = <0x3a 0x04 0x43 0x04>;
++				clocks = <0x59 0x3d 0x5a 0x5b 0x5c 0x5d 0x5e 0x5f 0x60 0x61 0x62 0x63 0x64 0x65 0x66 0x67 0x68 0x69 0x6a 0x6b>;
++				clock-names = "mipi_corner\0mipi_ref\0mipi_rxphy_ref\0csi0_system\0csi0_apb\0csi0_pixel\0csi1_system\0csi1_apb\0csi1_pixel\0vi_axi\0vi_apb\0tpg_pixel\0isp_f2k_apb\0isp_f2k_axi\0isp_r2k_apb\0isp_r2k_axi\0isp_tof_apb\0isp_tof_axi\0fbc_apb\0fbc_axi";
++				resets = <0x04 0x150 0x01 0x1f 0x00 0x04 0x120 0x01 0x1f 0x00 0x04 0x124 0x01 0x1f 0x00 0x04 0x128 0x01 0x1f 0x00 0x04 0x12c 0x01 0x1f 0x00 0x04 0x134 0x01 0x1f 0x00 0x04 0x138 0x01 0x1f 0x00 0x04 0x13c 0x01 0x1f 0x00 0x04 0x140 0x01 0x1f 0x00 0x04 0x148 0x01 0x1f 0x00 0x04 0x158 0x01 0x1f 0x00 0x04 0x194 0x01 0x1f 0x00>;
++				reset-names = "vi_rst\0isp_f4k_rst\0isp_f2k_rst\0isp_r2k_rst\0isp_tof_rst\0csi0_rst\0csi1_rst\0csi2_rst\0csi3_rst\0sensor_rst\0mfbc_rst\0mipi_corner_rst";
++				power-domains = <0x05 0x0d>;
++				dsi_en-gpios = <0x13 0x14 0x00>;
++				dsi_rest-gpios = <0x13 0x13 0x01>;
++				pinctrl-names = "default";
++				pinctrl-0 = <0x6c>;
++			};
++
++			isp1@92600000 {
++				status = "disabled";
++				compatible = "canaan,k510-isp1";
++				reg = <0x00 0x92600000 0x00 0x200000>;
++				interrupt-parent = <0x06>;
++				interrupts = <0x3a 0x04 0x3b 0x04>;
++				clocks = <0x59 0x3d 0x5a 0x5b 0x5c 0x5d 0x5e 0x5f 0x60 0x61 0x62 0x63 0x64 0x65 0x66 0x67 0x68 0x69 0x6a 0x6b>;
++				clock-names = "mipi_corner\0mipi_ref\0mipi_rxphy_ref\0csi0_system\0csi0_apb\0csi0_pixel\0csi1_system\0csi1_apb\0csi1_pixel\0vi_axi\0vi_apb\0tpg_pixel\0isp_f2k_apb\0isp_f2k_axi\0isp_r2k_apb\0isp_r2k_axi\0isp_tof_apb\0isp_tof_axi\0fbc_apb\0fbc_axi";
++				resets = <0x04 0x150 0x01 0x1f 0x00 0x04 0x120 0x01 0x1f 0x00 0x04 0x124 0x01 0x1f 0x00 0x04 0x128 0x01 0x1f 0x00 0x04 0x12c 0x01 0x1f 0x00 0x04 0x134 0x01 0x1f 0x00 0x04 0x138 0x01 0x1f 0x00 0x04 0x13c 0x01 0x1f 0x00 0x04 0x140 0x01 0x1f 0x00 0x04 0x148 0x01 0x1f 0x00 0x04 0x158 0x01 0x1f 0x00 0x04 0x194 0x01 0x1f 0x00>;
++				reset-names = "vi_rst\0isp_f4k_rst\0isp_f2k_rst\0isp_r2k_rst\0isp_tof_rst\0csi0_rst\0csi1_rst\0csi2_rst\0csi3_rst\0sensor_rst\0mfbc_rst\0mipi_corner_rst";
++				power-domains = <0x05 0x0d>;
++				sensor_num = <0x02>;
++				dphy_speed = <0x01>;
++				dphy_mode = <0x00>;
++				sony_mode = <0x00>;
++
++				ports {
++					#address-cells = <0x01>;
++					#size-cells = <0x00>;
++
++					port@1 {
++						reg = <0x01>;
++						#address-cells = <0x01>;
++						#size-cells = <0x00>;
++
++						endpoint@0 {
++							status = "okay";
++							reg = <0x01>;
++							remote-endpoint = <0x6d>;
++							clock-lanes = <0x00>;
++							data-lanes = <0x01 0x02>;
++							data-type = <0x2b>;
++							tpg_r_en = <0x00>;
++							tpg_w_en = <0x00>;
++							wdr_sensor_vendor = <0x00>;
++							wdr_mode = <0x00>;
++							mipi_csi_mode = <0x00>;
++							isp_pipeline = <0x01>;
++							phandle = <0x4b>;
++						};
++					};
++
++					port@2 {
++						reg = <0x02>;
++						#address-cells = <0x01>;
++						#size-cells = <0x00>;
++
++						endpoint@1 {
++							status = "okay";
++							reg = <0x01>;
++							remote-endpoint = <0x6e>;
++							clock-lanes = <0x01>;
++							data-lanes = <0x03 0x04>;
++							data-type = <0x2b>;
++							tpg_r_en = <0x00>;
++							tpg_w_en = <0x00>;
++							wdr_sensor_vendor = <0x00>;
++							wdr_mode = <0x00>;
++							mipi_csi_mode = <0x00>;
++							isp_pipeline = <0x02>;
++							phandle = <0x53>;
++						};
++					};
++				};
++			};
++
++			twod@92720000 {
++				status = "disabled";
++				compatible = "k510, kendrty_2d";
++				reg = <0x00 0x92720000 0x00 0x10000>;
++				interrupt-parent = <0x06>;
++				interrupts = <0x44 0x00>;
++				clocks = <0x6f 0x70>;
++				clock-names = "twod_apb\0twod_axi";
++			};
++
++			display@92700000 {
++				status = "disabled";
++				compatible = "canaan,k510-display\0microsharp,display";
++				reg = <0x00 0x92700000 0x00 0x40000>;
++				resets = <0x04 0x164 0x01 0x1f 0x00 0x04 0x16c 0x01 0x1f 0x00 0x04 0x174 0x01 0x1f 0x00 0x04 0x17c 0x01 0x1f 0x00>;
++				reset-names = "dsi_rst\0bt1120_rst\0twdo_rst\0vo_rst";
++				power-domains = <0x05 0x0a>;
++			};
++
++			mipi-tx-phy@92718000 {
++				compatible = "kendryte,kendryte-k510-dphy";
++				reg = <0x00 0x92718000 0x00 0x100>;
++				framerate = <0x1e>;
++				#phy-cells = <0x00>;
++				status = "disabled";
++				clocks = <0x59 0x3d 0x71 0x72>;
++				clock-names = "mipi_conner\0mipi_ref\0mipi_txphy_ref\0mipi_txphy_pll";
++				phandle = <0x77>;
++			};
++
++			display-subsystem {
++				compatible = "kendryte,display-subsystem";
++				ports = <0x73>;
++				status = "disabled";
++			};
++
++			vop@92700000 {
++				compatible = "kendryte,kendryte-k510-vop";
++				reg = <0x00 0x92700000 0x00 0x10000>;
++				status = "disabled";
++				interrupt-parent = <0x06>;
++				interrupts = <0x43 0x04>;
++				clocks = <0x74 0x75>;
++				clock-names = "vo_apb\0vo_axi";
++
++				port {
++					#address-cells = <0x01>;
++					#size-cells = <0x00>;
++					phandle = <0x73>;
++
++					endpoint@1 {
++						reg = <0x00>;
++						remote-endpoint = <0x76>;
++						phandle = <0x7b>;
++					};
++				};
++			};
++
++			mipi_dsi@92710000 {
++				compatible = "kendryte,kendryte-k510-dsi";
++				reg = <0x00 0x92710000 0x00 0x1000>;
++				framerate = <0x1e>;
++				phys = <0x77>;
++				phy-names = "mipi_dphy";
++				#size-cells = <0x00>;
++				#address-cells = <0x01>;
++				status = "disabled";
++				clocks = <0x78 0x79 0x7a>;
++				clock-names = "dsi_apb\0dsi_system\0display_pixel";
++
++				ports {
++					#address-cells = <0x01>;
++					#size-cells = <0x00>;
++
++					port {
++
++						endpoint {
++							remote-endpoint = <0x7b>;
++							phandle = <0x76>;
++						};
++					};
++
++					port@1 {
++						reg = <0x01>;
++
++						endpoint {
++							remote-endpoint = <0x7c>;
++							phandle = <0x7e>;
++						};
++					};
++				};
++
++				planel@0 {
++					compatible = "simple-panel-dsi";
++					reg = <0x00>;
++					reset-gpios = <0x13 0x13 0x01>;
++					backlight_gpio-gpios = <0x13 0x14 0x00>;
++					pinctrl-names = "default";
++					prepare-delay-ms = <0x64>;
++					reset-delay-ms = <0x0a>;
++					init-delay-ms = <0x64>;
++					disable-delay-ms = <0x32>;
++					unprepare-delay-ms = <0x14>;
++					width-mm = <0x44>;
++					height-mm = <0x79>;
++					dsi,flags = <0xa03>;
++					dsi,format = <0x00>;
++					dsi,lanes = <0x04>;
++					panel-init-sequence-v1 = [39 00 04 b9 ff 83 99 39 00 10 b1 02 04 70 90 01 32 33 11 11 4d 57 56 73 02 02 39 00 0c b2 00 80 80 ae 05 07 5a 11 10 10 00 39 00 2e b4 00 ff 04 08 0c 00 00 00 10 00 00 02 00 24 02 04 09 21 03 00 00 0a 90 88 04 08 0c 00 00 00 04 00 00 02 00 24 02 04 08 00 00 02 88 00 08 39 00 28 d3 00 00 00 00 00 00 04 04 32 10 04 00 04 00 00 00 00 00 00 00 00 00 00 21 00 05 05 13 00 00 00 05 40 00 00 00 05 20 80 39 00 21 d5 00 00 21 20 19 19 18 18 00 00 01 00 18 18 03 02 19 19 00 00 00 00 00 00 00 00 31 31 30 30 2f 2f 39 00 21 d6 40 40 20 21 18 18 19 19 40 40 02 03 18 18 00 01 19 19 40 40 40 40 40 40 40 40 31 31 30 30 2f 2f 39 00 11 d8 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 39 00 02 bd 01 39 00 11 d8 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 39 00 02 bd 02 39 00 09 d8 aa ae ea aa aa ae ea aa 39 00 02 bd 00 39 00 37 e0 01 15 22 1e 46 51 5e 5a 63 6a 71 76 7b 82 88 8d 92 9c a0 ab a2 b5 bd 63 61 6e 7a 01 15 22 1e 46 51 5e 5a 63 6a 71 76 7b 82 89 8e 92 9c a0 ab a2 b5 bd 63 61 6e 7a 39 00 03 c0 25 5a 39 00 03 b6 91 91 39 00 02 d2 66 39 00 02 cc 08 39 00 02 36 03 05 00 01 11 05 00 01 29];
++					panel-init-sequence-v2 = [39 00 04 b9 ff 83 99 39 00 02 d2 aa 39 00 10 b1 02 04 71 91 01 32 33 11 11 ab 4d 56 73 02 02 39 00 10 b2 00 80 80 ae 05 07 5a 11 00 00 10 1e 70 03 d4 39 00 2d b4 00 ff 02 c0 02 c0 00 00 08 00 04 06 00 32 04 0a 08 21 03 01 00 0f b8 8b 02 c0 02 c0 00 00 08 00 04 06 00 32 04 0a 08 01 00 0f b8 01 39 00 22 d3 00 00 00 00 00 00 06 00 00 10 04 00 04 00 00 00 00 00 00 00 00 00 00 01 00 05 05 07 00 00 00 05 40 39 00 21 d5 18 18 19 19 18 18 21 20 01 00 07 06 05 04 03 02 18 18 18 18 18 18 2f 2f 30 30 31 31 18 18 18 18 39 00 21 d6 18 18 19 19 40 40 20 21 02 03 04 05 06 07 00 01 40 40 40 40 40 40 2f 2f 30 30 31 31 40 40 40 40 39 00 11 d8 a2 aa 02 a0 a2 a8 02 a0 b0 00 00 00 b0 00 00 00 39 00 02 bd 01 39 00 11 d8 b0 00 00 00 b0 00 00 00 e2 aa 03 f0 e2 aa 03 f0 39 00 02 bd 02 39 00 09 d8 e2 aa 03 f0 e2 aa 03 f0 39 00 02 bd 00 39 00 03 b6 8d 8d 39 00 37 e0 00 12 1f 1a 40 4a 59 55 5e 67 6f 75 7a 82 8b 90 95 9f a3 ad a2 b2 b6 5e 5a 65 77 00 12 1f 1a 40 4a 59 55 5e 67 6f 75 7a 82 8b 90 95 9f a3 ad a2 b2 b6 5e 5a 65 77 39 00 03 c6 ff f9 39 00 02 cc 04 05 00 01 11 05 00 01 29];
++
++					display-timings {
++						native-mode = <0x7d>;
++
++						timing0 {
++							clock-frequency = <0x3938700>;
++							hactive = <0x438>;
++							vactive = <0x780>;
++							hback-porch = <0x2a>;
++							hfront-porch = <0x2c>;
++							vback-porch = <0x0a>;
++							vfront-porch = <0x0e>;
++							hsync-len = <0x02>;
++							vsync-len = <0x02>;
++							hsync-active = <0x00>;
++							vsync-active = <0x00>;
++							de-active = <0x00>;
++							pixelclk-active = <0x00>;
++							phandle = <0x7d>;
++						};
++					};
++
++					ports {
++						#address-cells = <0x01>;
++						#size-cells = <0x00>;
++
++						port@0 {
++							reg = <0x00>;
++
++							endpoint {
++								remote-endpoint = <0x7e>;
++								phandle = <0x7c>;
++							};
++						};
++					};
++				};
++			};
++
++			h264@92740000 {
++				status = "disabled";
++				compatible = "al,al5r";
++				reg = <0x00 0x92740000 0x00 0x10000>;
++				interrupt-parent = <0x06>;
++				interrupts = <0x3f 0x04>;
++				clocks = <0x7f>;
++				resets = <0x04 0x184 0x01 0x1f 0x00>;
++				reset-names = "h264_rst";
++				power-domains = <0x05 0x0b>;
++			};
++		};
++
++		gpio-keys {
++			compatible = "gpio-keys";
++
++			key1 {
++				label = "KEY 1";
++				linux,code = <0x1e>;
++				gpios = <0x13 0x04 0x03>;
++			};
++
++			key2 {
++				label = "KEY 2";
++				linux,code = <0x30>;
++				gpios = <0x13 0x06 0x03>;
++			};
++		};
++	};
++
++	sound {
++		compatible = "canaan,canaan-audio-nau8822";
++		canaan,model = "CANAAN-I2S";
++		canaan,i2s-controller = <0x80>;
++		canaan,audio-codec = <0x81>;
++	};
++};
+diff --git a/arch/riscv/configs/k510_defconfig b/arch/riscv/configs/k510_defconfig
+index c3c549ed..a4c9828c 100755
+--- a/arch/riscv/configs/k510_defconfig
++++ b/arch/riscv/configs/k510_defconfig
+@@ -23,6 +23,8 @@ CONFIG_CFS_BANDWIDTH=y
+ CONFIG_CGROUP_CPUACCT=y
+ CONFIG_NAMESPACES=y
+ CONFIG_USER_NS=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_INITRAMFS_SOURCE="${BR_BINARIES_DIR}/rootfs.cpio"
+ CONFIG_SYSCTL_SYSCALL=y
+ CONFIG_CHECKPOINT_RESTORE=y
+ CONFIG_KALLSYMS_ALL=y
+@@ -63,11 +65,9 @@ CONFIG_NFTL=y
+ CONFIG_NFTL_RW=y
+ CONFIG_INFTL=y
+ CONFIG_MTD_NAND=y
+-CONFIG_MTD_SPI_NAND=y
+ CONFIG_MTD_SPI_NOR=y
+ CONFIG_MTD_UBI=y
+ CONFIG_BLK_DEV_LOOP=y
+-CONFIG_WS2812B=y
+ CONFIG_K510_GNNE_DRIVER=y
+ CONFIG_K510_DSP_DRIVER=y
+ CONFIG_SCSI=y
+@@ -94,17 +94,12 @@ CONFIG_SERIAL_8250_DW=y
+ CONFIG_SERIAL_OF_PLATFORM=y
+ CONFIG_HW_RANDOM=y
+ CONFIG_I2C_CHARDEV=y
++CONFIG_I2C_MUX=y
+ CONFIG_I2C_DESIGNWARE_PLATFORM=y
+ CONFIG_I2C_GPIO=y
+ CONFIG_I2C_DEBUG_CORE=y
+ CONFIG_I2C_DEBUG_ALGO=y
+ CONFIG_I2C_DEBUG_BUS=y
+-CONFIG_SPI=y
+-CONFIG_SPI_DEBUG=y
+-CONFIG_SPI_DESIGNWARE=y
+-CONFIG_SPI_DW_DMA=y
+-CONFIG_SPI_DW_MMIO=y
+-CONFIG_SPI_SPIDEV=y
+ CONFIG_PINCTRL=y
+ CONFIG_PINCTRL_SINGLE=y
+ CONFIG_PINCTRL_K510=y
+@@ -120,23 +115,11 @@ CONFIG_CANAAN_THERMAL=y
+ CONFIG_WATCHDOG=y
+ CONFIG_WATCHDOG_SYSFS=y
+ CONFIG_DW_WATCHDOG=y
+-CONFIG_MEDIA_SUPPORT=y
+-CONFIG_MEDIA_CAMERA_SUPPORT=y
+-CONFIG_MEDIA_CONTROLLER=y
+-CONFIG_VIDEO_V4L2_SUBDEV_API=y
+-CONFIG_V4L_PLATFORM_DRIVERS=y
+-CONFIG_SOC_CAMERA=y
+-CONFIG_SOC_CAMERA_PLATFORM=y
+-CONFIG_K510_ISP_TEST_DRIVER=y
+-CONFIG_ALLEGRO_CODEC_DRIVER=y
+-CONFIG_VIDEO_CANAAN_K510=y
+-CONFIG_VIDEO_IMX219_0=y
+-CONFIG_VIDEO_IMX219_1=y
++CONFIG_MFD_SYSCON=y
+ CONFIG_DRM=y
+ CONFIG_DRM_KENDRYTE=y
+ CONFIG_KENDRYTE_CADENCE_MIPI_DSI=y
+ CONFIG_DRM_PANEL_SIMPLE=y
+-CONFIG_DRM_LONTIUM_LT9611=y
+ CONFIG_FB_FTLCDC100=y
+ CONFIG_BACKLIGHT_LCD_SUPPORT=y
+ CONFIG_LCD_CLASS_DEVICE=y
+@@ -147,34 +130,7 @@ CONFIG_DUMMY_CONSOLE_COLUMNS=40
+ CONFIG_DUMMY_CONSOLE_ROWS=30
+ CONFIG_FRAMEBUFFER_CONSOLE=y
+ CONFIG_LOGO=y
+-CONFIG_SOUND=y
+-CONFIG_SND=y
+-CONFIG_SND_DEBUG=y
+-# CONFIG_SND_DRIVERS is not set
+-# CONFIG_SND_SPI is not set
+-# CONFIG_SND_USB is not set
+-CONFIG_SND_SOC=y
+-CONFIG_SND_SOC_CANAAN_MAX98090=y
+-CONFIG_SND_SOC_CANAAN_NAU8822=y
+-CONFIG_SND_SOC_CANAAN_AUDIO=y
+-CONFIG_SND_DESIGNWARE_I2S=y
+-CONFIG_SND_SOC_MAX98090=y
+-CONFIG_SND_SOC_NAU8822=y
+-CONFIG_USB=y
+-CONFIG_USB_OTG=y
+-CONFIG_USB_STORAGE=y
+-CONFIG_USB_GADGET=y
+-CONFIG_USB_CONFIGFS=y
+-CONFIG_USB_CONFIGFS_MASS_STORAGE=y
+-CONFIG_USB_CONFIGFS_F_FS=y
+-CONFIG_USB_CONFIGFS_F_HID=y
+-CONFIG_MMC=y
+-CONFIG_MMC_TEST=y
+-CONFIG_MMC_DEBUG=y
+-CONFIG_MMC_SDHCI=y
+-CONFIG_MMC_SDHCI_PLTFM=y
+-CONFIG_MMC_SDHCI_CADENCE=y
+-CONFIG_MMC_FTSDC=y
++# CONFIG_USB_SUPPORT is not set
+ CONFIG_RTC_CLASS=y
+ CONFIG_RTC_DRV_KENDRYTE=y
+ CONFIG_DMADEVICES=y
+@@ -205,6 +161,7 @@ CONFIG_MSDOS_FS=y
+ CONFIG_VFAT_FS=y
+ CONFIG_TMPFS=y
+ CONFIG_TMPFS_POSIX_ACL=y
++CONFIG_CONFIGFS_FS=y
+ CONFIG_UBIFS_FS=y
+ CONFIG_UBIFS_FS_ADVANCED_COMPR=y
+ CONFIG_NFS_FS=y
+-- 
+2.17.1
+
