@@ -1,0 +1,425 @@
+From c42989f8b4a0d9369c12f686fe5323e62e50b7ff Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Fri, 12 Aug 2022 18:33:24 +0800
+Subject: [PATCH] bbl line flush, save cahce bash reg,
+
+---
+ arch/riscv/andesv5/cache.c   | 226 +++++++++++++++++++++++++++++++++--
+ arch/riscv/include/asm/sbi.h |  26 ++++
+ 2 files changed, 241 insertions(+), 11 deletions(-)
+
+diff --git a/arch/riscv/andesv5/cache.c b/arch/riscv/andesv5/cache.c
+index 7a9270bd..ddf8510d 100755
+--- a/arch/riscv/andesv5/cache.c
++++ b/arch/riscv/andesv5/cache.c
+@@ -21,6 +21,9 @@
+ 
+ extern void __iomem *l2c_base;
+ 
++static DEFINE_SPINLOCK(cache_lock);
++
++
+ DEFINE_PER_CPU(struct andesv5_cache_info, cpu_cache_info) = {
+ 	.init_done = 0,
+ 	.dcache_line_size = SZ_32
+@@ -55,6 +58,147 @@ inline int get_cache_line_size(void)
+ }
+ 
+ 
++
++struct  l1_flush_info{
++	ulong start;
++	ulong end;	
++	ulong start_phy;
++	ulong end_phy;
++	ulong cache_line;
++	ulong cmd;
++	ulong flage;
++};
++
++
++
++
++static void riscv_l1_flush_one_cpu(void *data)
++{
++	struct l1_flush_info *info = (struct l1_flush_info *)data;
++	ulong start=info->start;
++	ulong end=info->end;
++	ulong flags;
++
++	
++	start = start & (~(info->cache_line  - 1));
++	
++	//get_cpu();
++	while (end > start) 
++	{
++		//local_irq_save(flags);	
++		
++		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, start);
++		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, info->cmd);
++		//local_irq_restore(flags);
++		start += info->cache_line;
++	}
++	//put_cpu();
++	
++	return ;
++}
++
++/*
++void riscv_l1_flush_one_cpu_tmp(void *data)
++{
++	ulong start=0x100;
++
++	custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, start);
++	custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
++		
++	return ;
++}
++*/
++
++
++static unsigned int riscv_l1_flush_on_all_cpu(struct l1_flush_info *info)
++{
++	int ret,cpu,mhartid;
++	ulong mask=2;
++	ulong v1,v2,v3;
++
++	//on_each_cpu_cond(riscv_l1_flush_cond, riscv_l1_flush_one_cpu, info, 1 , GFP_ATOMIC);
++	mhartid = get_cpu();
++
++	(mhartid == 0 ) ? (mask = 2) :(mask = 1) ;
++	//printk("this cpu mhartid =%x, cpu mask=%lx s=%lx e=%lx \r\n", mhartid, mask, info->start, info->end);
++	//printk("s=%lx v=%lx\n", info->start, *(unsigned long *)info->start);
++	#if 1
++	v1=*(ulong *)info->start;
++	v2= *(ulong *)(info->start + 8);
++	v3= *(ulong *)(info->end - 8);
++	//printk("---%d cpu=%d  va=%lx  pa=%016lx paend =%016lx \n", 
++	//			info->flage, mhartid, info->start, info->start_phy, info->end_phy );
++	#endif 
++
++	sbi_remote_l1_cache(&mask, info->start_phy, info->end_phy, info->cmd, v1,v2,v3);	
++	riscv_l1_flush_one_cpu(info);
++	put_cpu();
++	
++	return 0;
++}
++
++
++
++#if 0 //on_each_cpu_cond
++bool riscv_l1_flush_cond (int cpu, void *info)
++{
++	return 1;
++
++}
++
++static unsigned int riscv_l1_flush_on_all_cpu(struct l1_flush_info *info)
++{
++	int ret,cpu,mhartid;
++
++	on_each_cpu_cond(riscv_l1_flush_cond, riscv_l1_flush_one_cpu, info, 1 , GFP_ATOMIC);
++
++	return 0;
++}
++#endif 
++
++#if 0 //smp_call_function_single
++static unsigned int riscv_l1_flush_on_all_cpu(struct l1_flush_info *info)
++{
++	int ret,cpu,mhartid;
++	//call_single_data_t csd;
++
++	//on_each_cpu_cond(riscv_l1_flush_cond, riscv_l1_flush_one_cpu, info, 1 , GFP_ATOMIC);
++	mhartid = get_cpu();
++	for_each_online_cpu(cpu){
++		ret = smp_call_function_single(cpu, riscv_l1_flush_one_cpu, info, 0);
++		WARN_ON_ONCE(ret);
++	}	
++	put_cpu();
++	return 0;
++}
++#endif 
++#if 0 //smp_call_function_single_async
++static unsigned int riscv_l1_flush_on_all_cpu(struct l1_flush_info *info)
++{
++	int ret,cpu,mhartid;
++	call_single_data_t csds[2];
++	call_single_data_t *pcsd ;
++
++	//on_each_cpu_cond(riscv_l1_flush_cond, riscv_l1_flush_one_cpu, info, 1 , GFP_ATOMIC);
++	
++	mhartid = get_cpu();
++	
++	for_each_online_cpu(cpu){	
++		if(cpu <= 1){
++			pcsd = &csds[cpu];
++			pcsd->func = riscv_l1_flush_one_cpu;
++			pcsd->info = info;
++			pcsd->flags = 0;
++			ret = smp_call_function_single_async(cpu, pcsd);
++			WARN_ON_ONCE(ret);
++		}
++	}	
++	put_cpu();
++	return 0;
++}
++#endif 
++
++
+ static uint32_t cpu_l2c_get_cctl_status(void)
+ {
+ 	return readl((void*)(l2c_base + L2C_REG_STATUS_OFFSET));
+@@ -62,45 +206,63 @@ static uint32_t cpu_l2c_get_cctl_status(void)
+ 
+ void cpu_dcache_wb_range(unsigned long start, unsigned long end, int line_size)
+ {
+-	int mhartid = get_cpu();
++	
++	int mhartid ;
+ 	unsigned long pa;
+ 
++	
++	//printk("start =%lx \n", start, task_pid_nr(current));
++	
++	mhartid = get_cpu();
+ 	while (end > start) {
+-		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, start);
+-		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
+ 
+ 		if (l2c_base) {
+ 			pa = virt_to_phys(start);
++			unsigned long flags;
++			spin_lock_irqsave(&cache_lock, flags);
++			
+ 			writel(pa, (void*)(l2c_base + L2C_REG_CN_ACC_OFFSET(mhartid)));
+ 			writel(CCTL_L2_PA_WB, (void*)(l2c_base + L2C_REG_CN_CMD_OFFSET(mhartid)));
+ 			while ((cpu_l2c_get_cctl_status() & CCTL_L2_STATUS_CN_MASK(mhartid))
+ 				!= CCTL_L2_STATUS_IDLE);
++			spin_unlock_irqrestore(&cache_lock, flags);
+ 		}
+ 
+ 		start += line_size;
+ 	}
+     put_cpu();
++	//printk("start end =%lx %lx\n", start, mhartid, task_pid(current));
+ }
+ 
+ void cpu_dcache_inval_range(unsigned long start, unsigned long end, int line_size)
+ {
+ 	int mhartid = get_cpu();
+ 	unsigned long pa;
++	unsigned long flags;
++	//printk("start =%lx %lx cpu%d \n", start, end, mhartid);
+ 
++	//printk("cpu_dcache_inval_range cpu %d start %lx\n", mhartid, start);
+ 	while (end > start) {
++		//printk("start =%lx mh=%d \n", start, mhartid);
+ 		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, start);
+ 		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_INVAL);
+ 
+ 		if (l2c_base) {
+-			pa = virt_to_phys(start);
++			
++			pa = virt_to_phys(start);	
++			
++			spin_lock_irqsave(&cache_lock, flags);
+ 			writel(pa, (void*)(l2c_base + L2C_REG_CN_ACC_OFFSET(mhartid)));
+ 			writel(CCTL_L2_PA_INVAL, (void*)(l2c_base + L2C_REG_CN_CMD_OFFSET(mhartid)));
+ 			while ((cpu_l2c_get_cctl_status() & CCTL_L2_STATUS_CN_MASK(mhartid))
+ 				!= CCTL_L2_STATUS_IDLE);
++			spin_unlock_irqrestore(&cache_lock, flags);
++			
+ 		}
+ 
+ 		start += line_size;
+ 	}
++	
+     put_cpu();
+ }
+ void cpu_dma_inval_range(unsigned long start, unsigned long end)
+@@ -141,8 +303,21 @@ void cpu_dma_wb_range(unsigned long start, unsigned long end)
+ 	unsigned long flags;
+ 	unsigned long line_size = get_cache_line_size();
+ 
+-	local_irq_save(flags);
++	struct l1_flush_info info;
++
+ 	start = start & (~(line_size - 1));
++	info.start = start;
++	info.end=end;
++	info.start_phy = virt_to_phys(start);
++	info.end_phy = virt_to_phys(end);
++	info.cache_line = line_size;
++	info.cmd = CCTL_L1D_VA_WB;
++	info.flage = 0;
++
++	
++	local_irq_save(flags);	
++	riscv_l1_flush_on_all_cpu(&info);
++	//start = start & (~(line_size - 1));
+ 	cpu_dcache_wb_range(start, end, line_size);
+ 	local_irq_restore(flags);
+ }
+@@ -151,21 +326,25 @@ EXPORT_SYMBOL(cpu_dma_wb_range);
+ void k510_sharemem_dcache_inval_range(unsigned long va_start, unsigned long pa_start, unsigned long va_end, int line_size)
+ {
+ 	int mhartid = get_cpu();
++	unsigned long flags;
++	
+ 
+ 	while (va_end > va_start) {
+ 		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, va_start);
+ 		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_INVAL);
+ 
+ 		if (l2c_base) {
++			spin_lock_irqsave(&cache_lock, flags);
+ 			writel(pa_start, (void*)(l2c_base + L2C_REG_CN_ACC_OFFSET(mhartid)));
+ 			writel(CCTL_L2_PA_INVAL, (void*)(l2c_base + L2C_REG_CN_CMD_OFFSET(mhartid)));
+ 			while ((cpu_l2c_get_cctl_status() & CCTL_L2_STATUS_CN_MASK(mhartid))
+ 				!= CCTL_L2_STATUS_IDLE);
++			spin_unlock_irqrestore(&cache_lock, flags);			
+ 		}
+-
+ 		va_start += line_size;
+ 		pa_start += line_size;
+ 	}
++	
+ 	put_cpu();
+ }
+ 
+@@ -229,14 +408,15 @@ void k510_sharemem_dcache_wb_range(unsigned long va_start, unsigned long pa_star
+ 	}
+ #else
+ 	while (va_end > va_start) {
+-		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, va_start);
+-		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
+ 
+ 		if (l2c_base) {
++			unsigned long flags;
++			spin_lock_irqsave(&cache_lock, flags);
+ 			writel(pa_start, (void*)(l2c_base + L2C_REG_CN_ACC_OFFSET(mhartid)));
+ 			writel(CCTL_L2_PA_WB, (void*)(l2c_base + L2C_REG_CN_CMD_OFFSET(mhartid)));
+ 			while ((cpu_l2c_get_cctl_status() & CCTL_L2_STATUS_CN_MASK(mhartid))
+ 				!= CCTL_L2_STATUS_IDLE);
++			spin_unlock_irqrestore(&cache_lock, flags);
+ 		}
+ 
+ 		va_start += line_size;
+@@ -252,13 +432,31 @@ void k510_sharemem_wb_range(unsigned long va_start, unsigned long pa_start, unsi
+ 	unsigned long line_size = get_cache_line_size();
+ 	unsigned long va_end = va_start + size;
+ 
+-	local_irq_save(flags);
++
++	struct l1_flush_info info;
++
++	va_start = va_start & (~(line_size - 1));
++	pa_start = pa_start & (~(line_size - 1));
++	
++	info.start = va_start;
++	info.end=va_end;
++	info.start_phy = pa_start;
++	info.end_phy = pa_start +size;
++	info.cache_line = line_size;
++	info.cmd = CCTL_L1D_VA_WB;
++	info.flage = 1;
++
+ 	__asm__ __volatile__(
+         "li t6, 0x00040000\t\n"
+         "csrs sstatus, t6\t\n"
+     );
+-	va_start = va_start & (~(line_size - 1));
+-	pa_start = pa_start & (~(line_size - 1));
++
++	
++
++	local_irq_save(flags);
++	riscv_l1_flush_on_all_cpu(&info);
++	
++	
+ 	k510_sharemem_dcache_wb_range(va_start, pa_start, va_end, line_size);
+ 	__asm__ __volatile__(
+         "li t6, 0x00040000\t\n"
+@@ -294,10 +492,13 @@ void cpu_l2c_inval_range(unsigned long base, unsigned long pa)
+ {
+ 	int mhartid = get_cpu();
+ //	int mhartid = smp_processor_id();
++	unsigned long flags;
++	spin_lock_irqsave(&cache_lock, flags);
+ 	writel(pa, (void*)(base + L2C_REG_CN_ACC_OFFSET(mhartid)));
+ 	writel(CCTL_L2_PA_INVAL, (void*)(base + L2C_REG_CN_CMD_OFFSET(mhartid)));
+ 	while ((cpu_l2c_get_cctl_status() & CCTL_L2_STATUS_CN_MASK(mhartid))
+ 	       != CCTL_L2_STATUS_IDLE);
++	spin_unlock_irqrestore(&cache_lock, flags);
+         put_cpu();
+ }
+ EXPORT_SYMBOL(cpu_l2c_inval_range);
+@@ -306,10 +507,13 @@ void cpu_l2c_wb_range(unsigned long base, unsigned long pa)
+ {
+ 	int mhartid = get_cpu();
+ //	int mhartid = smp_processor_id();
++	unsigned long flags;
++	spin_lock_irqsave(&cache_lock, flags);			
+ 	writel(pa, (void*)(base + L2C_REG_CN_ACC_OFFSET(mhartid)));
+ 	writel(CCTL_L2_PA_WB, (void*)(base + L2C_REG_CN_CMD_OFFSET(mhartid)));
+ 	while ((cpu_l2c_get_cctl_status() & CCTL_L2_STATUS_CN_MASK(mhartid))
+ 	       != CCTL_L2_STATUS_IDLE);
++	spin_unlock_irqrestore(&cache_lock, flags);
+         put_cpu();
+ }
+ EXPORT_SYMBOL(cpu_l2c_wb_range);
+diff --git a/arch/riscv/include/asm/sbi.h b/arch/riscv/include/asm/sbi.h
+index ad7c7fe8..14bd54fc 100644
+--- a/arch/riscv/include/asm/sbi.h
++++ b/arch/riscv/include/asm/sbi.h
+@@ -30,6 +30,8 @@
+ #define SBI_READ_POWERBRAKE 11
+ #define SBI_WRITE_POWERBRAKE 12
+ #define SBI_GET_CYCLES 13
++#define SBI_REMOTE_L1_CACHE_FLUSH 14
++
+ 
+ #define SBI_CALL(which, arg0, arg1, arg2) ({			\
+ 	register uintptr_t a0 asm ("a0") = (uintptr_t)(arg0);	\
+@@ -49,6 +51,23 @@
+ #define SBI_CALL_2(which, arg0, arg1) SBI_CALL(which, arg0, arg1, 0)
+ #define SBI_CALL_3(which, arg0, arg1, arg2) SBI_CALL(which, arg0, arg1, arg2)
+ 
++#define SBI_CALL_7(which, arg0, arg1, arg2,arg3,arg4,arg5,arg6) ({			\
++	register uintptr_t a0 asm ("a0") = (uintptr_t)(arg0);	\
++	register uintptr_t a1 asm ("a1") = (uintptr_t)(arg1);	\
++	register uintptr_t a2 asm ("a2") = (uintptr_t)(arg2);	\
++	register uintptr_t a3 asm ("a3") = (uintptr_t)(arg3);	\
++	register uintptr_t a4 asm ("a4") = (uintptr_t)(arg4);	\
++	register uintptr_t a5 asm ("a5") = (uintptr_t)(arg5);	\
++	register uintptr_t a6 asm ("a6") = (uintptr_t)(arg6);	\
++	register uintptr_t a7 asm ("a7") = (uintptr_t)(which);	\
++	asm volatile ("ecall"					\
++		      : "+r" (a0)				\
++		      : "r" (a1), "r" (a2),"r" (a3),"r" (a4),"r" (a5),"r" (a6), "r" (a7)		\
++		      : "memory");				\
++	a0;							\
++})
++
++
+ static inline void sbi_write_powerbrake(int val)
+ {
+ 	SBI_CALL_1(SBI_WRITE_POWERBRAKE, val);
+@@ -103,6 +122,13 @@ static inline void sbi_remote_fence_i(const unsigned long *hart_mask)
+ 	SBI_CALL_1(SBI_REMOTE_FENCE_I, hart_mask);
+ }
+ 
++static inline void sbi_remote_l1_cache(const unsigned long *hart_mask, ulong start, ulong end,
++											 ulong flag, ulong v1,ulong v2, ulong v3)
++{
++	SBI_CALL_7(SBI_REMOTE_L1_CACHE_FLUSH, hart_mask, start, end, flag, v1,v2, v3);
++}
++
++
+ static inline void sbi_remote_sfence_vma(const unsigned long *hart_mask,
+ 					 unsigned long start,
+ 					 unsigned long size)
+-- 
+2.30.2
+
