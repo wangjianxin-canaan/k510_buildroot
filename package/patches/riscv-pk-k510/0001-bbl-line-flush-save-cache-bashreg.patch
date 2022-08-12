@@ -1,0 +1,410 @@
+From 4addd500cf2479bc31c27b8ff05aa06e1ddd75b3 Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Fri, 12 Aug 2022 18:09:30 +0800
+Subject: [PATCH] bbl line flush,save cache bashreg
+
+---
+ machine/mcall.h  |   2 +
+ machine/mentry.S |  68 ++++++++++++++
+ machine/mtrap.c  | 224 ++++++++++++++++++++++++++++++++++++++++++++++-
+ machine/mtrap.h  |  15 ++--
+ 4 files changed, 302 insertions(+), 7 deletions(-)
+
+diff --git a/machine/mcall.h b/machine/mcall.h
+index addfe0d..851657c 100644
+--- a/machine/mcall.h
++++ b/machine/mcall.h
+@@ -15,4 +15,6 @@
+ #define SBI_READ_POWERBRAKE 11
+ #define SBI_WRITE_POWERBRAKE 12
+ #define SBI_GET_CYCLES 13
++#define SBI_REMOTE_L1_FLUSH_CACHE  14
++
+ #endif
+diff --git a/machine/mentry.S b/machine/mentry.S
+index a3bfade..72a1458 100644
+--- a/machine/mentry.S
++++ b/machine/mentry.S
+@@ -31,6 +31,53 @@ trap_table:
+ reset_vector:
+   j do_reset
+ 
++flush_l1_cache:
++  STORE t2, 7*REGBYTES(sp)
++  STORE t3, 28*REGBYTES(sp)
++  STORE t4, 29*REGBYTES(sp)
++  STORE t5, 30*REGBYTES(sp)
++  STORE t6, 31*REGBYTES(sp)
++
++  LOAD t4, 32*REGBYTES(sp)
++  LOAD t5, 33*REGBYTES(sp)
++  LOAD t6, 34*REGBYTES(sp)
++
++  csrr t2, mcctlbeginaddr
++  
++2:  
++  
++  csrw	 mcctlbeginaddr,t4
++  csrw	mcctlcommand,t6
++  
++  //csrw	mcctlbeginaddr,t4
++  //csrw	mcctlcommand,t6
++  //csrwi	mcctlcommand,1 
++  
++  //li t3, (1<<12)
++  //or t2, t4,t3
++  //csrw	mcctlbeginaddr,t2
++  //csrw	mcctlcommand,t6 
++  
++  //li t3, ~(1<<12)
++  //and t2, t4,t3  
++  //csrw	mcctlbeginaddr,t2
++  //csrw	mcctlcommand,t6 
++  
++  addi t4, t4, 32
++  bgtu t5, t4, 2b
++
++  //csrwi	mcctlcommand,7 
++  csrw	mcctlbeginaddr,t2
++  //csrw	ucctlbeginaddr,t2
++  
++  LOAD t2, 7*REGBYTES(sp)
++  LOAD t3, 28*REGBYTES(sp)
++  LOAD t4, 29*REGBYTES(sp)
++  LOAD t5, 30*REGBYTES(sp)
++  LOAD t6, 31*REGBYTES(sp)
++  ret
++  
++
+ trap_vector:
+   csrrw sp, mscratch, sp
+   beqz sp, .Ltrap_from_machine_mode
+@@ -105,6 +152,27 @@ trap_vector:
+   andi a1, a0, IPI_SFENCE_VMA
+   beqz a1, 1f
+   sfence.vma
++1:
++  andi a1, a0, IPI_L1_CACHE_FLUSH
++  beqz a1, 1f
++  STORE ra, 1*REGBYTES(sp)
++  jal x1, flush_l1_cache
++  LOAD ra, 1*REGBYTES(sp)
++  #jal  flush_l1_cache
++#if 0  
++  LOAD t4, 32*REGBYTES(sp)
++  LOAD t5, 33*REGBYTES(sp)
++  LOAD t6, 34*REGBYTES(sp)
++  
++2:  
++  csrw	ucctlbeginaddr,t4
++  //csrwi	ucctlcommand,1 //wb
++  csrw	ucctlcommand,t6 //wb or invalid
++  addi t4, t4, 32
++  bgtu t5, t4, 2b
++
++#endif   
++
+ 1:
+   andi a1, a0, IPI_HALT
+   beqz a1, 1f
+diff --git a/machine/mtrap.c b/machine/mtrap.c
+index cc6c57d..db898d9 100644
+--- a/machine/mtrap.c
++++ b/machine/mtrap.c
+@@ -14,6 +14,7 @@
+ #include <errno.h>
+ #include <stdarg.h>
+ #include <stdio.h>
++#include <string.h>
+ 
+ void __attribute__((noreturn)) bad_trap(uintptr_t* regs, uintptr_t dummy, uintptr_t mepc)
+ {
+@@ -175,12 +176,224 @@ uintptr_t mcall_get_cycles(uintptr_t* mtime_val)
+      return 0;
+ }
+ 
++void dump_buff(char * prompt,char *buff, int len)
++{
++    int i,j;
++    char *p = buff;
++	char pt;
++    if (prompt){
++    	printm("%s :\r\n",prompt);
++    }	
++	
++	if (len > 80) {
++		len=80;
++	}
++
++    for (i = 0; i < len; ++i)
++    {
++        if (i%16==0)
++        {
++            printm("\r\n%016lx: ",(unsigned long) p+i);
++			pt = *(p+i);
++			for(j=i;j<len;j++)
++			{
++				if(*(p+j) != pt){
++					break;
++				}
++			}
++			if(j-i>=16){
++				printm("%d ---- %02x\r\n", j-i,pt);
++				i=j-1;
++				continue;
++			}
++			
++        }
++        printm("%02x ",*(p+i));
++		
++    }
++
++}
++int memcmp(const void *cs, const void *ct, size_t count)
++{
++	const unsigned char *su1, *su2;
++	int res = 0;
++
++	for (su1 = cs, su2 = ct; 0 < count; ++su1, ++su2, count--)
++		if ((res = *su1 - *su2) != 0)
++			break;
++	return res;
++}
++
++/*
++0---bit12 clear
++1---bit12 set 1;
++2---error 
++*/
++int  get_adjust_add_Policy_by_value(uint64_t start, uint64_t end, uint64_t flag,
++										uint64_t v1,uint64_t v2,uint64_t v3)
++{
++	unsigned long *pv1_0,*pv1_1;
++	unsigned long *pv2_0,*pv2_1;
++	unsigned long *pv3_0,*pv3_1;
++	pv1_0=(unsigned long *)( start &(~(1UL<<12)));
++	pv1_1 = (unsigned long *) ( start|(1UL<<12));
++
++	//printm("get_adjust_add_Policy_by_value %lx ,%lx ,%lx\r\n", v1,v2,v3);
++	
++	if( ( *pv1_0 == v1 ) && (*pv1_1 != v1) ){
++		return 0;
++	}
++	else if( ( *pv1_0 != v1 ) && (*pv1_1 == v1) ){
++		return 1;
++	}
++	else if( ( *pv1_0 != v1 ) && (*pv1_1 != v1) )
++	{
++		printm("get_adjust_add_Policy_by_value error start =%lx v1_0=%lx %lx  %lx\r\n",start, *pv1_0, *pv1_1, v1 );
++		return  2;		
++	}
++
++	pv2_0 = (unsigned long *)( ( start + 8 )  &(~(1UL<<12)));
++	pv2_1 = (unsigned long *) (( start +8 )|(1UL<<12));
++	if( ( *pv2_0 == v2 ) && (*pv2_1 != v2) ){
++		return 0;
++	}
++	else if( ( *pv2_0 != v2 ) && (*pv2_1 == v2) ){
++		return 1;
++	}
++	else if( ( *pv2_0 != v2 ) && (*pv2_1 != v2) )
++	{
++		printm("get_adjust_add_Policy_by_value error start =%lx v2_0=%lx %lx  %lx\r\n",start, *pv2_0, *pv2_1, v2 );
++		return 2;	
++	}
++
++	pv3_0 = (unsigned long *)( ( end - 8 )  &(~(1UL<<12)));
++	pv3_1 = (unsigned long *) (( end - 8 )|(1UL<<12));
++	if( ( *pv3_0 == v3 ) && (*pv3_1 != v3) ){
++		return 0;
++	}
++	else if( ( *pv3_0 != v3 ) && (*pv3_1 == v3) ){
++		return 1;
++	}
++
++	printm("get_adjust_add_Policy_by_value warn start =%lx v3_0=%lx %lx  %lx\r\n",start, *pv3_0, *pv3_1, v3 );
++	//printm("v2 %lx %lx %lx \r\n", *pv2_0, *pv2_1, v2);
++	//printm("v1 %lx %lx %lx \r\n", *pv1_0, *pv1_1, v1);
++	#if 0
++	if(0 == memcmp((char *)( ( start + 8 )  &(~(1UL<<12))), (char *)(( start +8 )|(1UL<<12)), end-start))
++	{
++		printm("all data context is same\r\n");
++		
++	}
++	else
++	{
++		//dump_buff("", (char *)( ( start + 8 )  &(~(1UL<<12))), end-start);
++		//dump_buff("", (char *)(( start +8 )|(1UL<<12)), end-start);
++	}
++	#endif
++
++	
++	return 2;	
++}
++
++static void   send_ipi_l1_cache_low(uintptr_t recipient, int event, uint64_t start, uint64_t end, uint64_t flag,
++										uint64_t v1,uint64_t v2,uint64_t v3)
++{
++	uint64_t *regs = NULL;
++	//unsigned long *p0= (unsigned long *)( start &(~(1UL<<12))) ,*p1 = (unsigned long *) ( start|(1UL<<12));
++	//printm("start =%lx p0=%lx %lx p1=%lx %lx \n", start, p0,*p0,p1,*p1);
++
++	if (((disabled_hart_mask >> recipient) & 1)) return;
++
++	
++		
++	regs = (uint64_t *)((void*)OTHER_MACHINE_STACK_TOP(recipient)- (void*)MENTRY_FRAME_SIZE);
++	regs[32] = start;
++	regs[33] = end;
++	regs[34] = flag;
++	mb();
++	atomic_or(&OTHER_HLS(recipient)->mipi_pending, event);
++	mb();
++	plic_sw_pending(recipient);
++	return ;
++}
++
++/*
++v1=*start,
++v2=*(start+8)
++v3=*(end-8)
++*/
++ void send_ipi_l1_cache(uintptr_t* pmask, int event, uint64_t start, uint64_t end, uint64_t flag, 
++									uint64_t v1,uint64_t v2,uint64_t v3)
++{
++  _Static_assert(MAX_HARTS <= 8 * sizeof(*pmask), "# harts > uintptr_t bits");
++  uintptr_t mask = hart_mask;
++  int adjust_method;
++
++  #if 1
++  adjust_method = get_adjust_add_Policy_by_value(start, end,flag, v1,v2,v3);
++  if(adjust_method == 2)
++	{
++		return ;
++	}
++  if((adjust_method != 2) &&  ((( start>>12 )& 0x1) !=  adjust_method))
++  {
++  	 printm("need adjust add %lx , mean :%d \r\n", start, adjust_method);
++	if(adjust_method == 0){
++		start =  start &(~(1UL<<12));
++		end =  end &(~(1UL<<12));
++	}else if(adjust_method == 1)
++	{
++		start =  start|(1UL<<12);
++		end =  end|(1UL<<12);
++	}	
++  }
++  #endif 
++	
++	
++  
++  if (pmask)
++    mask &= load_uintptr_t(pmask, read_csr(mepc));
++
++  //printm("cpumask=%lx event %lx %lx %lx %lx  hartid=%lx\r\n\n", mask, event, start, end, flag,  HLS()->plic_sw.hart_id);
++
++
++
++  // send IPIs to everyone
++  for (uintptr_t i = 0, m = mask; m; i++, m >>= 1)
++	if (m & 1)
++	      send_ipi_l1_cache_low(i, event,start, end, flag,v1,v2,v3); 	
++
++  if (event == IPI_SOFT)
++    return;
++
++  // wait until all events have been handled.
++  // prevent deadlock by consuming incoming IPIs.
++  uint32_t incoming_ipi = 0;
++  for (uintptr_t i = 0, m = mask; m; i++, m >>= 1)
++    if (m & 1)
++      while (plic_sw_get_pending(i)) {
++        plic_sw_claim();
++        if (HLS()->plic_sw.source_id) {
++          incoming_ipi |= 1 << (HLS()->plic_sw.source_id);
++          plic_sw_complete();
++        }
++      }
++
++  // if we got an IPI, restore it; it will be taken after returning
++  if (incoming_ipi) {
++    *(HLS()->plic_sw.pending) = incoming_ipi;
++    mb();
++  }
++}
++
++
+ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
+ {
+   write_csr(mepc, mepc + 4);
+ 
+-  uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], arg2 = regs[12], retval, ipi_type;
+-
++  uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], arg2 = regs[12], arg3 = regs[13],retval, ipi_type;
++  uintptr_t arg4 = regs[14], arg5=regs[15],arg6=regs[16];
++  
+   switch (n)
+   {
+     case SBI_GET_CYCLES:
+@@ -201,6 +414,13 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
+       goto send_ipi;
+     case SBI_REMOTE_FENCE_I:
+       ipi_type = IPI_FENCE_I;
++	  goto send_ipi;
++	case SBI_REMOTE_L1_FLUSH_CACHE:  
++		ipi_type = IPI_L1_CACHE_FLUSH;		
++		//printm("mcall_trap %lx,%lx %lx \r\n",arg4, arg5, arg6 );
++		send_ipi_l1_cache((uintptr_t*)arg0, ipi_type, arg1, arg2, arg3, arg4,arg5,arg6);
++		retval = 0;
++		break;
+ send_ipi:
+       send_ipi_many((uintptr_t*)arg0, ipi_type);
+       retval = 0;
+diff --git a/machine/mtrap.h b/machine/mtrap.h
+index e930a66..fc6a55c 100644
+--- a/machine/mtrap.h
++++ b/machine/mtrap.h
+@@ -57,6 +57,9 @@ typedef struct {
+ #define HLS() ((hls_t*)(MACHINE_STACK_TOP() - HLS_SIZE))
+ #define OTHER_HLS(id) ((hls_t*)((void*)HLS() + RISCV_PGSIZE * ((id) - read_const_csr(mhartid))))
+ 
++#define OTHER_MACHINE_STACK_TOP(id) ((MACHINE_STACK_TOP() + RISCV_PGSIZE * ((id) - read_const_csr(mhartid))))
++
++
+ hls_t* hls_init(uintptr_t hart_id);
+ void parse_config_string();
+ void poweroff(uint16_t code) __attribute((noreturn));
+@@ -82,16 +85,18 @@ static inline void wfi()
+ #define IPI_FENCE_I    0x2
+ #define IPI_SFENCE_VMA 0x4
+ #define IPI_HALT       0x8
++#define IPI_L1_CACHE_FLUSH       	   0x10
++
+ 
+ #define MACHINE_STACK_SIZE RISCV_PGSIZE
+-#define MENTRY_HLS_OFFSET (INTEGER_CONTEXT_SIZE + SOFT_FLOAT_CONTEXT_SIZE)
+-#define MENTRY_FRAME_SIZE (MENTRY_HLS_OFFSET + HLS_SIZE)
++#define MENTRY_HLS_OFFSET (INTEGER_CONTEXT_SIZE + SOFT_FLOAT_CONTEXT_SIZE) //256
++#define MENTRY_FRAME_SIZE (MENTRY_HLS_OFFSET + HLS_SIZE) //256+96
+ #define MENTRY_IPI_OFFSET (MENTRY_HLS_OFFSET)
+ #define MENTRY_IPI_PENDING_OFFSET (MENTRY_HLS_OFFSET + REGBYTES)
+-#define MENTRY_PLIC_SW_OFFSET (MENTRY_HLS_OFFSET + REGBYTES * 7)
++#define MENTRY_PLIC_SW_OFFSET (MENTRY_HLS_OFFSET + REGBYTES * 7)// 312=56+256
+ #define MENTRY_PLIC_SW_SOURCE_ID (MENTRY_PLIC_SW_OFFSET + 4)
+ #if __riscv_xlen == 64
+-#define MENTRY_PLIC_SW_CLAIM (MENTRY_PLIC_SW_OFFSET + REGBYTES * 3)
++#define MENTRY_PLIC_SW_CLAIM (MENTRY_PLIC_SW_OFFSET + REGBYTES * 3) //336
+ #else
+ #define MENTRY_PLIC_SW_CLAIM (MENTRY_PLIC_SW_OFFSET + REGBYTES * 4)
+ #endif
+@@ -102,6 +107,6 @@ static inline void wfi()
+ # define SOFT_FLOAT_CONTEXT_SIZE (8 * 32)
+ #endif
+ #define HLS_SIZE 96
+-#define INTEGER_CONTEXT_SIZE (32 * REGBYTES)
++#define INTEGER_CONTEXT_SIZE (35 * REGBYTES)
+ 
+ #endif
+-- 
+2.30.2
+
