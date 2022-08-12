@@ -68,7 +68,7 @@ export auto=
 dmesg > dmesg_boot.log
 echo $(grep Machine /dmesg_boot.log| sed 's/^.*canaan //g') > platform.log
 linux_ver=`uname -r`
-
+exit
 if [ -d /lib/modules/$linux_ver/ ]; then
 		depmod -a
         while read module
