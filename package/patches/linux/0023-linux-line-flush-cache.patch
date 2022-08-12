@@ -1,0 +1,112 @@
+From 89dc83daf15760386798175b6f10ff53e4b36492 Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Fri, 12 Aug 2022 19:03:34 +0800
+Subject: [PATCH] linux line flush cache
+
+---
+ arch/riscv/andesv5/cache.c   | 43 ++++++++++++++++++++++++++++++------
+ arch/riscv/include/asm/sbi.h |  7 ++++++
+ 2 files changed, 43 insertions(+), 7 deletions(-)
+
+diff --git a/arch/riscv/andesv5/cache.c b/arch/riscv/andesv5/cache.c
+index 7a9270bd..9cb1fdb4 100755
+--- a/arch/riscv/andesv5/cache.c
++++ b/arch/riscv/andesv5/cache.c
+@@ -59,15 +59,43 @@ static uint32_t cpu_l2c_get_cctl_status(void)
+ {
+ 	return readl((void*)(l2c_base + L2C_REG_STATUS_OFFSET));
+ }
++static unsigned int riscv_l1_flush_on_all_cpu(ulong start, ulong end,int line_size)
++{
++	int ret,mhartid;
++	ulong mask=2;
++
++	mhartid = get_cpu();
++	(mhartid == 0 ) ? (mask = 2) :(mask = 1) ;
++	//printk("this cpu mhartid =%x, cpu mask=%lx s=%lx e=%lx \r\n", mhartid, mask, start, end);
++	sbi_remote_l1_cache_wb(&mask);
++	
++		
++	start = start & (~(line_size  - 1));	
++	while (end > start) 
++	{
++		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, start);
++		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
++		start += line_size;
++	}
++	
++	put_cpu();
++	mb();
++	return 0;
++}
++
++
+ 
+ void cpu_dcache_wb_range(unsigned long start, unsigned long end, int line_size)
+ {
+-	int mhartid = get_cpu();
++	int mhartid ;
+ 	unsigned long pa;
+ 
++	riscv_l1_flush_on_all_cpu(start, end, line_size);
++	
++
++	
++	mhartid = get_cpu();
+ 	while (end > start) {
+-		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, start);
+-		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
+ 
+ 		if (l2c_base) {
+ 			pa = virt_to_phys(start);
+@@ -218,7 +246,11 @@ EXPORT_SYMBOL(k510_sharemem_inval_range);
+ 
+ void k510_sharemem_dcache_wb_range(unsigned long va_start, unsigned long pa_start, unsigned long va_end, int line_size)
+ {
+-	int mhartid = get_cpu();
++	int mhartid ;
++	
++	riscv_l1_flush_on_all_cpu(va_start, va_end, line_size);
++	mhartid = get_cpu();
++	
+ #if 0
+ 	asm volatile ("fence.i");
+ 	custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_INVAL_ALL);
+@@ -229,9 +261,6 @@ void k510_sharemem_dcache_wb_range(unsigned long va_start, unsigned long pa_star
+ 	}
+ #else
+ 	while (va_end > va_start) {
+-		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, va_start);
+-		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
+-
+ 		if (l2c_base) {
+ 			writel(pa_start, (void*)(l2c_base + L2C_REG_CN_ACC_OFFSET(mhartid)));
+ 			writel(CCTL_L2_PA_WB, (void*)(l2c_base + L2C_REG_CN_CMD_OFFSET(mhartid)));
+diff --git a/arch/riscv/include/asm/sbi.h b/arch/riscv/include/asm/sbi.h
+index ad7c7fe8..a647a3e6 100644
+--- a/arch/riscv/include/asm/sbi.h
++++ b/arch/riscv/include/asm/sbi.h
+@@ -30,6 +30,8 @@
+ #define SBI_READ_POWERBRAKE 11
+ #define SBI_WRITE_POWERBRAKE 12
+ #define SBI_GET_CYCLES 13
++#define SBI_REMOTE_L1_CACHE_FLUSH 14
++
+ 
+ #define SBI_CALL(which, arg0, arg1, arg2) ({			\
+ 	register uintptr_t a0 asm ("a0") = (uintptr_t)(arg0);	\
+@@ -110,6 +112,11 @@ static inline void sbi_remote_sfence_vma(const unsigned long *hart_mask,
+ 	SBI_CALL_1(SBI_REMOTE_SFENCE_VMA, hart_mask);
+ }
+ 
++static inline void sbi_remote_l1_cache_wb(const unsigned long *hart_mask)
++{
++	SBI_CALL_1(SBI_REMOTE_L1_CACHE_FLUSH, hart_mask);
++}
++
+ static inline void sbi_remote_sfence_vma_asid(const unsigned long *hart_mask,
+ 					      unsigned long start,
+ 					      unsigned long size,
+-- 
+2.30.2
+

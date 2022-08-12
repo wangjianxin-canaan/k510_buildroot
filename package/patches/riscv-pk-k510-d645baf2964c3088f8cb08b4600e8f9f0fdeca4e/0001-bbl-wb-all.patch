@@ -1,0 +1,83 @@
+From 40680c8aa02012b040935faa2ac3c2be1ab72427 Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Fri, 12 Aug 2022 19:05:37 +0800
+Subject: [PATCH] bbl wb all
+
+---
+ machine/mcall.h  |  2 ++
+ machine/mentry.S | 12 ++++++++++++
+ machine/mtrap.c  |  4 ++++
+ machine/mtrap.h  |  1 +
+ 4 files changed, 19 insertions(+)
+
+diff --git a/machine/mcall.h b/machine/mcall.h
+index addfe0d..851657c 100644
+--- a/machine/mcall.h
++++ b/machine/mcall.h
+@@ -15,4 +15,6 @@
+ #define SBI_READ_POWERBRAKE 11
+ #define SBI_WRITE_POWERBRAKE 12
+ #define SBI_GET_CYCLES 13
++#define SBI_REMOTE_L1_FLUSH_CACHE  14
++
+ #endif
+diff --git a/machine/mentry.S b/machine/mentry.S
+index a3bfade..347d03c 100644
+--- a/machine/mentry.S
++++ b/machine/mentry.S
+@@ -31,6 +31,11 @@ trap_table:
+ reset_vector:
+   j do_reset
+ 
++flush_l1_cache:
++	csrwi	ucctlcommand,7
++	ret
++
++
+ trap_vector:
+   csrrw sp, mscratch, sp
+   beqz sp, .Ltrap_from_machine_mode
+@@ -105,6 +110,13 @@ trap_vector:
+   andi a1, a0, IPI_SFENCE_VMA
+   beqz a1, 1f
+   sfence.vma
++1:
++  andi a1, a0, IPI_L1_CACHE_FLUSH
++  beqz a1, 1f
++  STORE ra, 1*REGBYTES(sp)
++  jal x1, flush_l1_cache
++  LOAD ra, 1*REGBYTES(sp)
++  
+ 1:
+   andi a1, a0, IPI_HALT
+   beqz a1, 1f
+diff --git a/machine/mtrap.c b/machine/mtrap.c
+index cc6c57d..7c9724a 100644
+--- a/machine/mtrap.c
++++ b/machine/mtrap.c
+@@ -201,6 +201,10 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
+       goto send_ipi;
+     case SBI_REMOTE_FENCE_I:
+       ipi_type = IPI_FENCE_I;
++	  goto send_ipi;
++	case SBI_REMOTE_L1_FLUSH_CACHE:
++      ipi_type = IPI_L1_CACHE_FLUSH;
++	  goto send_ipi;	
+ send_ipi:
+       send_ipi_many((uintptr_t*)arg0, ipi_type);
+       retval = 0;
+diff --git a/machine/mtrap.h b/machine/mtrap.h
+index e930a66..ea36dd6 100644
+--- a/machine/mtrap.h
++++ b/machine/mtrap.h
+@@ -82,6 +82,7 @@ static inline void wfi()
+ #define IPI_FENCE_I    0x2
+ #define IPI_SFENCE_VMA 0x4
+ #define IPI_HALT       0x8
++#define IPI_L1_CACHE_FLUSH       	   0x10
+ 
+ #define MACHINE_STACK_SIZE RISCV_PGSIZE
+ #define MENTRY_HLS_OFFSET (INTEGER_CONTEXT_SIZE + SOFT_FLOAT_CONTEXT_SIZE)
+-- 
+2.30.2
+
