@@ -1,0 +1,52 @@
+From 415d98fa2672a273d312fa1a83fa9bef05142ddc Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Fri, 12 Aug 2022 17:53:21 +0800
+Subject: [PATCH] Read the memory before flushing the cache
+
+---
+ arch/riscv/andesv5/cache.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/arch/riscv/andesv5/cache.c b/arch/riscv/andesv5/cache.c
+index 7a9270bd..574b19c3 100755
+--- a/arch/riscv/andesv5/cache.c
++++ b/arch/riscv/andesv5/cache.c
+@@ -13,6 +13,7 @@
+ #ifdef CONFIG_PERF_EVENTS
+ #include <asm/perf_event.h>
+ #endif
++#include <linux/crc32.h>
+ 
+ #define MAX_CACHE_LINE_SIZE 256
+ #define EVSEL_MASK	0xff
+@@ -64,6 +65,13 @@ void cpu_dcache_wb_range(unsigned long start, unsigned long end, int line_size)
+ {
+ 	int mhartid = get_cpu();
+ 	unsigned long pa;
++	unsigned int crc;
++	crc = crc32(0xFFFFFFFFU, start, end-start);
++	if(crc == 0)
++	{
++		printk("crc 0\r\n");
++	}
++
+ 
+ 	while (end > start) {
+ 		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, start);
+@@ -219,6 +227,13 @@ EXPORT_SYMBOL(k510_sharemem_inval_range);
+ void k510_sharemem_dcache_wb_range(unsigned long va_start, unsigned long pa_start, unsigned long va_end, int line_size)
+ {
+ 	int mhartid = get_cpu();
++	
++	unsigned int crc;
++	crc = crc32(0xFFFFFFFFU, va_start, va_end-va_start);
++	if(crc == 0)
++	{
++		printk("crc 0\r\n");
++	}
+ #if 0
+ 	asm volatile ("fence.i");
+ 	custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_INVAL_ALL);
+-- 
+2.30.2
+
