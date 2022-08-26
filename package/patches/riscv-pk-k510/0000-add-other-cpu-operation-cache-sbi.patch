@@ -1,0 +1,337 @@
+From 036ac31a4507e7546cc3f9045b63ec93572c6693 Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Fri, 26 Aug 2022 17:25:27 +0800
+Subject: [PATCH] add other cpu operation cache sbi
+
+---
+ machine/mcall.h  |   2 +
+ machine/mentry.S |  96 +++++++++++++++++++++++++++++--
+ machine/mtrap.c  | 144 ++++++++++++++++++++++++++++++++++++++++++++++-
+ machine/mtrap.h  |   5 +-
+ 4 files changed, 238 insertions(+), 9 deletions(-)
+
+diff --git a/machine/mcall.h b/machine/mcall.h
+index addfe0d..851657c 100644
+--- a/machine/mcall.h
++++ b/machine/mcall.h
+@@ -15,4 +15,6 @@
+ #define SBI_READ_POWERBRAKE 11
+ #define SBI_WRITE_POWERBRAKE 12
+ #define SBI_GET_CYCLES 13
++#define SBI_REMOTE_L1_FLUSH_CACHE  14
++
+ #endif
+diff --git a/machine/mentry.S b/machine/mentry.S
+index a3bfade..9a96a0a 100644
+--- a/machine/mentry.S
++++ b/machine/mentry.S
+@@ -79,12 +79,7 @@ trap_vector:
+   li a0, IRQ_M_SOFT * 2
+   bne a0, a1, .Lbad_trap
+ 
+-  # Yes.  First, clear the MIPI bit.
+-  # PLIC_SW Claim
+-  LOAD a0, MENTRY_PLIC_SW_CLAIM(sp)
+-  lw a1, (a0)
+-  sw a1, MENTRY_PLIC_SW_SOURCE_ID(sp)
+-  fence
++
+ 
+   # Now, decode the cause(s).
+ #ifdef __riscv_atomic
+@@ -110,7 +105,96 @@ trap_vector:
+   beqz a1, 1f
+   wfi
+   j 1b
++
+ 1:
++  andi a1, a0, IPI_L1_CACHE_FLUSH
++  beqz a1, 1f
++  STORE ra, 1*REGBYTES(sp)
++  //STORE t0, 2*REGBYTES(sp)
++  STORE gp, 3*REGBYTES(sp)
++  STORE tp, 4*REGBYTES(sp)
++  STORE t0, 5*REGBYTES(sp)
++  STORE t1, 6*REGBYTES(sp)
++  STORE t2, 7*REGBYTES(sp)
++  STORE s0, 8*REGBYTES(sp)
++  STORE s1, 9*REGBYTES(sp)
++  //a0--10
++  //a1--11
++  STORE a2,12*REGBYTES(sp)
++  STORE a3,13*REGBYTES(sp)  
++  STORE a2,12*REGBYTES(sp)
++  STORE a3,13*REGBYTES(sp)
++  STORE a4,14*REGBYTES(sp)
++  STORE a5,15*REGBYTES(sp)
++  STORE a6,16*REGBYTES(sp)
++  STORE a7,17*REGBYTES(sp)
++  STORE s2,18*REGBYTES(sp)
++  STORE s3,19*REGBYTES(sp)
++  STORE s4,20*REGBYTES(sp)
++  STORE s5,21*REGBYTES(sp)
++  STORE s6,22*REGBYTES(sp)
++  STORE s7,23*REGBYTES(sp)
++  STORE s8,24*REGBYTES(sp)
++  STORE s9,25*REGBYTES(sp)
++  STORE s10,26*REGBYTES(sp)
++  STORE s11,27*REGBYTES(sp)
++  STORE t3,28*REGBYTES(sp)
++  STORE t4,29*REGBYTES(sp)
++  STORE t5,30*REGBYTES(sp)
++  STORE t6,31*REGBYTES(sp)
++ 
++  
++
++  LOAD a0, 35*REGBYTES(sp)//va
++  LOAD a1, 32*REGBYTES(sp) //pa_start
++  LOAD a2, 33*REGBYTES(sp)//pa_enc
++  LOAD a3, 34*REGBYTES(sp)//commoad
++  
++  
++  jal x1, l1_opt_cache_low //x1 = ra  //jal x1, flush_l1_cache //x1 = ra
++  
++  LOAD ra, 1*REGBYTES(sp)
++  //LOAD t0, 2*REGBYTES(sp)
++  LOAD gp, 3*REGBYTES(sp)
++  LOAD tp, 4*REGBYTES(sp)
++  LOAD t0, 5*REGBYTES(sp)
++  LOAD t1, 6*REGBYTES(sp)
++  LOAD t2, 7*REGBYTES(sp)
++  LOAD s0, 8*REGBYTES(sp)
++  LOAD s1, 9*REGBYTES(sp)
++  //a0--10
++  //a1--11
++  LOAD a2,12*REGBYTES(sp)
++  LOAD a3,13*REGBYTES(sp)  
++  LOAD a2,12*REGBYTES(sp)
++  LOAD a3,13*REGBYTES(sp)
++  LOAD a4,14*REGBYTES(sp)
++  LOAD a5,15*REGBYTES(sp)
++  LOAD a6,16*REGBYTES(sp)
++  LOAD a7,17*REGBYTES(sp)
++  LOAD s2,18*REGBYTES(sp)
++  LOAD s3,19*REGBYTES(sp)
++  LOAD s4,20*REGBYTES(sp)
++  LOAD s5,21*REGBYTES(sp)
++  LOAD s6,22*REGBYTES(sp)
++  LOAD s7,23*REGBYTES(sp)
++  LOAD s8,24*REGBYTES(sp)
++  LOAD s9,25*REGBYTES(sp)
++  LOAD s10,26*REGBYTES(sp)
++  LOAD s11,27*REGBYTES(sp)
++  LOAD t3,28*REGBYTES(sp)
++  LOAD t4,29*REGBYTES(sp)
++  LOAD t5,30*REGBYTES(sp)
++  LOAD t6,31*REGBYTES(sp)
++  
++
++1:
++     # clear the MIPI bit. PLIC_SW Claim
++  LOAD a0, MENTRY_PLIC_SW_CLAIM(sp)
++  lw a1, (a0)
++  sw a1, MENTRY_PLIC_SW_SOURCE_ID(sp)
++  fence
++  
+   /* PLIC_SW Complete */
+   LOAD a1, MENTRY_PLIC_SW_CLAIM(sp)
+   lw a0, MENTRY_PLIC_SW_SOURCE_ID(sp)
+diff --git a/machine/mtrap.c b/machine/mtrap.c
+index cc6c57d..1250d3f 100644
+--- a/machine/mtrap.c
++++ b/machine/mtrap.c
+@@ -174,13 +174,146 @@ uintptr_t mcall_get_cycles(uintptr_t* mtime_val)
+     *mtime_val = *mtime;
+      return 0;
+ }
++#define L1D_VA_INVAL  0
++#define L1D_VA_WB 1
++#define L1D_IX_INVAL 16
++#define L1D_IX_WB 17
++#define CCTL_L1D_IX_WBINVAL         18
++#define CCTL_L1D_IX_RTAG 19
++#define CCTL_L1D_IX_RDATA           20
++
++
++void l1_opt_cache_low(uint64_t va_s, uint64_t pa_s, uint64_t pa_end, uint64_t cmd)
++{
++	int i=0;// way_match=0, have_match=0;
++	uint64_t tag;
++	uint64_t va=va_s,pa=pa_s;
++
++	
++	uint64_t org_mcctlbeginaddr = read_csr(mcctlbeginaddr);//ucctlbeginaddr
++	uint64_t org_ucctlbeginaddr = read_csr(ucctlbeginaddr);
++
++	//printm("\r\nva=%lx-pa=%lx-pae=%lx-cmd=%ld-mid=%ld\r\n",va,pa,pa_end, cmd, hid );
++	
++	if(cmd == L1D_VA_WB)
++	{
++		cmd = L1D_IX_WB;
++	}
++	else if(cmd == L1D_VA_INVAL)
++	{
++		cmd =  L1D_IX_INVAL;
++		//printm("inval va=%lx pa=%lx pae=%lx cmd=%ld mid=%ld \r\n",va,pa,pa_end, cmd, read_const_csr(mhartid) );
++		//while(1);
++	}
++	else
++	{
++		//printm("error va=%lx pa=%lx pae=%lx cmd=%ld mid=%ld \r\n",va,pa,pa_end, cmd, read_const_csr(mhartid) );
++		return ;
++	}
++	
++
++	for(; pa < pa_end; pa = pa+32,va = va+32)
++	{
++		//read_csr  write_csr
++		for(i=0; i<4; i++)
++		{
++			write_csr(mcctlbeginaddr, (i<<13)|(va & (0xffUL<<5)));
++			write_csr(mcctlcommand, CCTL_L1D_IX_RTAG); //read tag
++			tag=read_csr(mcctldata);
++			
++			
++			if( (tag & (1UL<<63)) && ( (pa>>12) == ((tag & 0xffffffffUL)>>2) ) )
++			{
++				write_csr(mcctlbeginaddr, (i<<13)|(va & (0xffUL<<5)));
++				write_csr(mcctlcommand,  cmd); //index wb/inval		
++				if(cmd == L1D_IX_INVAL)
++				{
++					printm("inval match va:%lx pa:%lx >>%lx tag %lx index:%lx way=%d\r\n",va,pa,pa>>10, tag, (va & (0xffUL<<5)) ,i);
++				}
++			}
++		}
++	}
++
++	write_csr(mcctlbeginaddr, org_mcctlbeginaddr);
++	write_csr(ucctlbeginaddr, org_ucctlbeginaddr);
++	//printm("xjw %d va=%lx\r\n", hid, va);
++
++}
++static void   send_ipi_l1_cache_low_low(uintptr_t recipient, int event, uint64_t start, uint64_t end, uint64_t cache_opt_cmd ,  uint64_t va)
++{
++	uint64_t *regs = NULL;
++	//unsigned long *p0= (unsigned long *)( start &(~(1UL<<12))) ,*p1 = (unsigned long *) ( start|(1UL<<12));
++	//printm("start =%lx p0=%lx %lx p1=%lx %lx \n", start, p0,*p0,p1,*p1);
++
++	if (((disabled_hart_mask >> recipient) & 1)) return;	
++		
++	regs = (uint64_t *)((void*)OTHER_MACHINE_STACK_TOP(recipient)- (void*)MENTRY_FRAME_SIZE);
++	regs[32] = start;
++	regs[33] = end;
++	regs[34] = cache_opt_cmd;
++	regs[35] = va;
++	mb();
++	atomic_or(&OTHER_HLS(recipient)->mipi_pending, event);
++	mb();
++	plic_sw_pending(recipient);
++	return ;
++}
++
++
++/*
++
++*/
++ void send_ipi_l1_cache(uintptr_t* pmask, int event, uint64_t start, uint64_t end, uint64_t cache_opt_cmd, 
++									uint64_t va,uint64_t v2,uint64_t v3)
++{
++
++	  _Static_assert(MAX_HARTS <= 8 * sizeof(*pmask), "# harts > uintptr_t bits");
++	  uint64_t hid= read_const_csr(mhartid);
++	  uintptr_t mask = hart_mask;
++	  if (pmask)
++	    mask &= load_uintptr_t(pmask, read_csr(mepc));
++
++	  //printm("send_ipi_l1_cache hid =%ld\r\n",hid);
++
++	  // send IPIs to everyone
++	  for (uintptr_t i = 0, m = mask; m; i++, m >>= 1)
++	    if (m & 1)
++			send_ipi_l1_cache_low_low(i, event,start, end, cache_opt_cmd, va);
++
++	  if (event == IPI_SOFT)
++	    return;
++
++	  // wait until all events have been handled.
++	  // prevent deadlock by consuming incoming IPIs.
++	  uint32_t incoming_ipi = 0;
++	  for (uintptr_t i = 0, m = mask; m; i++, m >>= 1)
++	    if (m & 1)
++	      while (plic_sw_get_pending(i)) {
++	        plic_sw_claim();
++	        if (HLS()->plic_sw.source_id) {
++	          incoming_ipi |= 1 << (HLS()->plic_sw.source_id);
++	          plic_sw_complete();
++	        }
++	      }
++
++	  // if we got an IPI, restore it; it will be taken after returning
++	  if (incoming_ipi) {
++	    *(HLS()->plic_sw.pending) = incoming_ipi;
++	    mb();
++	  }
++	   //printm("send_ipi_l1_cache hid =%ld end \n",hid);
++
++  
++}
++
+ 
+ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
+ {
+   write_csr(mepc, mepc + 4);
+ 
+-  uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], arg2 = regs[12], retval, ipi_type;
+-
++  uintptr_t n = regs[17], arg0 = regs[10], arg1 = regs[11], arg2 = regs[12], arg3 = regs[13],retval, ipi_type;
++  uintptr_t arg4 = regs[14], arg5=regs[15],arg6=regs[16];
++  
+   switch (n)
+   {
+     case SBI_GET_CYCLES:
+@@ -201,6 +334,13 @@ void mcall_trap(uintptr_t* regs, uintptr_t mcause, uintptr_t mepc)
+       goto send_ipi;
+     case SBI_REMOTE_FENCE_I:
+       ipi_type = IPI_FENCE_I;
++	  goto send_ipi;
++	case SBI_REMOTE_L1_FLUSH_CACHE:  
++		ipi_type = IPI_L1_CACHE_FLUSH;		
++		//printm("mcall_trap %lx,%lx %lx \r\n",arg4, arg5, arg6 );
++		send_ipi_l1_cache((uintptr_t*)arg0, ipi_type, arg1, arg2, arg3, arg4,arg5,arg6);
++		retval = 0;
++		break;
+ send_ipi:
+       send_ipi_many((uintptr_t*)arg0, ipi_type);
+       retval = 0;
+diff --git a/machine/mtrap.h b/machine/mtrap.h
+index e930a66..a53bfb3 100644
+--- a/machine/mtrap.h
++++ b/machine/mtrap.h
+@@ -57,6 +57,8 @@ typedef struct {
+ #define HLS() ((hls_t*)(MACHINE_STACK_TOP() - HLS_SIZE))
+ #define OTHER_HLS(id) ((hls_t*)((void*)HLS() + RISCV_PGSIZE * ((id) - read_const_csr(mhartid))))
+ 
++#define OTHER_MACHINE_STACK_TOP(id) ((MACHINE_STACK_TOP() + RISCV_PGSIZE * ((id) - read_const_csr(mhartid))))
++
+ hls_t* hls_init(uintptr_t hart_id);
+ void parse_config_string();
+ void poweroff(uint16_t code) __attribute((noreturn));
+@@ -82,6 +84,7 @@ static inline void wfi()
+ #define IPI_FENCE_I    0x2
+ #define IPI_SFENCE_VMA 0x4
+ #define IPI_HALT       0x8
++#define IPI_L1_CACHE_FLUSH       	   0x10
+ 
+ #define MACHINE_STACK_SIZE RISCV_PGSIZE
+ #define MENTRY_HLS_OFFSET (INTEGER_CONTEXT_SIZE + SOFT_FLOAT_CONTEXT_SIZE)
+@@ -102,6 +105,6 @@ static inline void wfi()
+ # define SOFT_FLOAT_CONTEXT_SIZE (8 * 32)
+ #endif
+ #define HLS_SIZE 96
+-#define INTEGER_CONTEXT_SIZE (32 * REGBYTES)
++#define INTEGER_CONTEXT_SIZE (36 * REGBYTES)
+ 
+ #endif
+-- 
+2.30.2
+

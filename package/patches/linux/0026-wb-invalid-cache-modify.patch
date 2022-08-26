@@ -1,0 +1,221 @@
+From 8b2f8c838b435accdd93ac3376b2b39ae67ae6cf Mon Sep 17 00:00:00 2001
+From: wangjianxin <wangjianxin@canaan-creative.com>
+Date: Fri, 26 Aug 2022 17:14:57 +0800
+Subject: [PATCH] wb invalid cache modify
+
+---
+ arch/riscv/andesv5/cache.c   | 110 ++++++++++++++++++++++++++++++++++-
+ arch/riscv/include/asm/sbi.h |  26 +++++++++
+ 2 files changed, 135 insertions(+), 1 deletion(-)
+
+diff --git a/arch/riscv/andesv5/cache.c b/arch/riscv/andesv5/cache.c
+index 7a9270bd..79092b84 100755
+--- a/arch/riscv/andesv5/cache.c
++++ b/arch/riscv/andesv5/cache.c
+@@ -14,6 +14,13 @@
+ #include <asm/perf_event.h>
+ #endif
+ 
++//#define  WB_READ_ONE_TIME  1
++#define INVALID_OTHRER_CPU 1
++#define WB_OTHER_CPU 1
++
++#ifdef WB_READ_ONE_TIME
++#include <linux/crc32.h>
++#endif 
+ #define MAX_CACHE_LINE_SIZE 256
+ #define EVSEL_MASK	0xff
+ #define SEL_PER_CTL	8
+@@ -55,6 +62,33 @@ inline int get_cache_line_size(void)
+ }
+ 
+ 
++
++struct  l1_cache_opt_info{
++	ulong start;
++	ulong end;	
++	ulong start_phy;
++	ulong end_phy;
++	ulong cache_line;
++	ulong cmd;
++	ulong flage;
++};
++
++static unsigned int riscv_l1_cache_opt_on_other_cpu(struct l1_cache_opt_info *info)
++{
++	int mhartid;
++	ulong mask=2;
++
++
++	mhartid = get_cpu();
++	(mhartid == 0 ) ? (mask = 2) :(mask = 1) ;	
++	//printk("hid =%x,m:%lx s=%lx e=%lx  ps:%lx pe:%lx cmd:%d f:%d\r\n", 
++	//	mhartid, mask, info->start, info->end, info->start_phy, info->end_phy, info->cmd, info->flage);
++	//printk("begain %d\r\n",mhartid);
++	sbi_remote_l1_cache(&mask, info->start_phy, info->end_phy, info->cmd, info->start,info->flage,0);	
++	//printk("end %d \r\n",mhartid);
++	put_cpu();
++	return 0;
++}
+ static uint32_t cpu_l2c_get_cctl_status(void)
+ {
+ 	return readl((void*)(l2c_base + L2C_REG_STATUS_OFFSET));
+@@ -64,7 +98,31 @@ void cpu_dcache_wb_range(unsigned long start, unsigned long end, int line_size)
+ {
+ 	int mhartid = get_cpu();
+ 	unsigned long pa;
++	#ifdef  WB_READ_ONE_TIME
++	unsigned int crc;
++	crc = crc32(0xFFFFFFFFU, start, end-start);
++	if(crc == 0)
++	{
++		printk("crc 0\r\n");
++	}
++	#endif 
++	
++	#ifdef WB_OTHER_CPU
++
++	struct l1_cache_opt_info info;
+ 
++	info.start = start;
++	info.end=end;
++	info.start_phy = virt_to_phys(start);
++	info.end_phy = virt_to_phys(end);
++	info.cache_line = line_size;
++	info.cmd = CCTL_L1D_VA_WB;
++	info.flage = 0;
++
++	riscv_l1_cache_opt_on_other_cpu(&info);
++
++	#endif 
++	
+ 	while (end > start) {
+ 		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, start);
+ 		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_WB);
+@@ -87,6 +145,19 @@ void cpu_dcache_inval_range(unsigned long start, unsigned long end, int line_siz
+ 	int mhartid = get_cpu();
+ 	unsigned long pa;
+ 
++	#ifdef INVALID_OTHRER_CPU
++	struct l1_cache_opt_info info;
++
++	info.start = start;
++	info.end=end;
++	info.start_phy = virt_to_phys(start);
++	info.end_phy = virt_to_phys(end);
++	info.cache_line = line_size;
++	info.cmd = CCTL_L1D_VA_INVAL;
++	info.flage = 10;
++
++	riscv_l1_cache_opt_on_other_cpu(&info);
++	#endif 
+ 	while (end > start) {
+ 		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, start);
+ 		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_INVAL);
+@@ -151,7 +222,20 @@ EXPORT_SYMBOL(cpu_dma_wb_range);
+ void k510_sharemem_dcache_inval_range(unsigned long va_start, unsigned long pa_start, unsigned long va_end, int line_size)
+ {
+ 	int mhartid = get_cpu();
+-
++	#ifdef INVALID_OTHRER_CPU
++
++	struct l1_cache_opt_info info;
++	
++	info.start = va_start;
++	info.end=va_end;
++	info.start_phy =pa_start;
++	info.end_phy = pa_start+(va_end-va_start);
++	info.cache_line = line_size;
++	info.cmd = CCTL_L1D_VA_INVAL;
++	info.flage = 11;
++
++	riscv_l1_cache_opt_on_other_cpu(&info);
++	#endif 
+ 	while (va_end > va_start) {
+ 		custom_csr_write(CCTL_REG_UCCTLBEGINADDR_NUM, va_start);
+ 		custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_VA_INVAL);
+@@ -219,6 +303,30 @@ EXPORT_SYMBOL(k510_sharemem_inval_range);
+ void k510_sharemem_dcache_wb_range(unsigned long va_start, unsigned long pa_start, unsigned long va_end, int line_size)
+ {
+ 	int mhartid = get_cpu();
++	#ifdef  WB_READ_ONE_TIME
++	unsigned int crc;
++	crc = crc32(0xFFFFFFFFU, va_start, va_end-va_start);
++	if(crc == 0)
++	{
++		printk("crc 0\r\n");
++	}
++	#endif 
++
++	#ifdef WB_OTHER_CPU
++
++	struct l1_cache_opt_info info;
++
++	info.start = va_start;
++	info.end=va_end;
++	info.start_phy =pa_start;
++	info.end_phy = pa_start+(va_end-va_start);
++	info.cache_line = line_size;
++	info.cmd = CCTL_L1D_VA_WB;
++	info.flage = 1;
++
++	riscv_l1_cache_opt_on_other_cpu(&info);
++
++	#endif 
+ #if 0
+ 	asm volatile ("fence.i");
+ 	custom_csr_write(CCTL_REG_UCCTLCOMMAND_NUM, CCTL_L1D_INVAL_ALL);
+diff --git a/arch/riscv/include/asm/sbi.h b/arch/riscv/include/asm/sbi.h
+index ad7c7fe8..02e8b779 100644
+--- a/arch/riscv/include/asm/sbi.h
++++ b/arch/riscv/include/asm/sbi.h
+@@ -30,6 +30,8 @@
+ #define SBI_READ_POWERBRAKE 11
+ #define SBI_WRITE_POWERBRAKE 12
+ #define SBI_GET_CYCLES 13
++#define SBI_REMOTE_L1_CACHE_FLUSH 14
++
+ 
+ #define SBI_CALL(which, arg0, arg1, arg2) ({			\
+ 	register uintptr_t a0 asm ("a0") = (uintptr_t)(arg0);	\
+@@ -49,6 +51,23 @@
+ #define SBI_CALL_2(which, arg0, arg1) SBI_CALL(which, arg0, arg1, 0)
+ #define SBI_CALL_3(which, arg0, arg1, arg2) SBI_CALL(which, arg0, arg1, arg2)
+ 
++#define SBI_CALL_7(which, arg0, arg1, arg2,arg3,arg4,arg5,arg6) ({			\
++	register uintptr_t a0 asm ("a0") = (uintptr_t)(arg0);	\
++	register uintptr_t a1 asm ("a1") = (uintptr_t)(arg1);	\
++	register uintptr_t a2 asm ("a2") = (uintptr_t)(arg2);	\
++	register uintptr_t a3 asm ("a3") = (uintptr_t)(arg3);	\
++	register uintptr_t a4 asm ("a4") = (uintptr_t)(arg4);	\
++	register uintptr_t a5 asm ("a5") = (uintptr_t)(arg5);	\
++	register uintptr_t a6 asm ("a6") = (uintptr_t)(arg6);	\
++	register uintptr_t a7 asm ("a7") = (uintptr_t)(which);	\
++	asm volatile ("ecall"					\
++		      : "+r" (a0)				\
++		      : "r" (a1), "r" (a2),"r" (a3),"r" (a4),"r" (a5),"r" (a6), "r" (a7)		\
++		      : "memory");				\
++	a0;							\
++})
++
++
+ static inline void sbi_write_powerbrake(int val)
+ {
+ 	SBI_CALL_1(SBI_WRITE_POWERBRAKE, val);
+@@ -103,6 +122,13 @@ static inline void sbi_remote_fence_i(const unsigned long *hart_mask)
+ 	SBI_CALL_1(SBI_REMOTE_FENCE_I, hart_mask);
+ }
+ 
++static inline void sbi_remote_l1_cache(const unsigned long *hart_mask, ulong start, ulong end,
++											 ulong cache_opt_cmd, ulong va_start,ulong flage, ulong v1)
++{
++	SBI_CALL_7(SBI_REMOTE_L1_CACHE_FLUSH, hart_mask, start, end, cache_opt_cmd, va_start,flage, v1);
++}
++
++
+ static inline void sbi_remote_sfence_vma(const unsigned long *hart_mask,
+ 					 unsigned long start,
+ 					 unsigned long size)
+-- 
+2.30.2
+
